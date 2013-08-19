@@ -1519,9 +1519,6 @@ public class WorkingMessage {
         cursor = SqliteWrapper.query(context, cr,
                 Mms.Draft.CONTENT_URI, MMS_DRAFT_PROJECTION,
                 selection, null, null);
-        if (cursor == null) {
-            return null;
-        }
 
         Uri uri;
         try {

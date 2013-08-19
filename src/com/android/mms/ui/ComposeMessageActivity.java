@@ -26,11 +26,23 @@ import static com.android.mms.ui.MessageListAdapter.COLUMN_ID;
 import static com.android.mms.ui.MessageListAdapter.COLUMN_MSG_TYPE;
 import static com.android.mms.ui.MessageListAdapter.PROJECTION;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.LoaderManager;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -40,24 +52,16 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.Loader;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SqliteWrapper;
 import android.drm.DrmStore;
-import android.gesture.Gesture;
-import android.gesture.GestureLibrary;
-import android.gesture.GestureOverlayView;
-import android.gesture.GestureOverlayView.OnGesturePerformedListener;
-import android.gesture.Prediction;
 import android.graphics.drawable.Drawable;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -68,33 +72,23 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
 import android.os.SystemProperties;
-import android.preference.PreferenceManager;
-import android.provider.CalendarContract;
-import android.provider.CalendarContract.Events;
 import android.provider.ContactsContract;
-import android.provider.ContactsContract.CommonDataKinds;
-import android.provider.ContactsContract.CommonDataKinds.Email;
-import android.provider.ContactsContract.CommonDataKinds.Event;
-import android.provider.ContactsContract.CommonDataKinds.Phone;
-import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
-import android.provider.ContactsContract.Contacts;
-import android.provider.ContactsContract.Data;
-import android.provider.ContactsContract.Intents;
 import android.provider.ContactsContract.QuickContact;
+import android.provider.Telephony;
+import android.provider.ContactsContract.CommonDataKinds.Email;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Contacts;
+import android.provider.ContactsContract.Intents;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 import android.provider.Settings;
-import android.provider.Telephony;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Sms;
-import android.support.v4.widget.CursorAdapter;
-import android.support.v4.widget.SimpleCursorAdapter;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsMessage;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputFilter.LengthFilter;
-import android.text.InputType;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -116,22 +110,16 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.LinearLayout;
 
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.internal.telephony.TelephonyProperties;
-import com.android.internal.telephony.util.BlacklistUtils;
 import com.android.mms.LogTag;
 import com.android.mms.MmsApp;
 import com.android.mms.MmsConfig;
@@ -146,19 +134,14 @@ import com.android.mms.data.WorkingMessage.MessageStatusListener;
 import com.android.mms.drm.DrmUtils;
 import com.android.mms.model.SlideModel;
 import com.android.mms.model.SlideshowModel;
-import com.android.mms.templates.TemplateGesturesLibrary;
-import com.android.mms.templates.TemplatesProvider.Template;
 import com.android.mms.transaction.MessagingNotification;
 import com.android.mms.ui.MessageListView.OnSizeChangedListener;
 import com.android.mms.ui.MessageUtils.ResizeImageResultCallback;
 import com.android.mms.ui.RecipientsEditor.RecipientContextMenuInfo;
-import com.android.mms.util.DateUtils;
 import com.android.mms.util.DraftCache;
-import com.android.mms.util.EmojiParser;
 import com.android.mms.util.PhoneNumberFormatter;
 import com.android.mms.util.SendingProgressTokenManager;
 import com.android.mms.util.SmileyParser;
-import com.android.mms.util.UnicodeFilter;
 import com.android.mms.widget.MmsWidgetProvider;
 import com.google.android.mms.ContentType;
 import com.google.android.mms.MmsException;
@@ -167,24 +150,6 @@ import com.google.android.mms.pdu.PduBody;
 import com.google.android.mms.pdu.PduPart;
 import com.google.android.mms.pdu.PduPersister;
 import com.google.android.mms.pdu.SendReq;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.text.Normalizer;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * This is the main UI for:
@@ -201,8 +166,7 @@ import java.util.regex.Pattern;
  */
 public class ComposeMessageActivity extends Activity
         implements View.OnClickListener, TextView.OnEditorActionListener,
-        MessageStatusListener, Contact.UpdateListener, OnGesturePerformedListener,
-        LoaderManager.LoaderCallbacks<Cursor>  {
+        MessageStatusListener, Contact.UpdateListener {
     public static final int REQUEST_CODE_ATTACH_IMAGE     = 100;
     public static final int REQUEST_CODE_TAKE_PICTURE     = 101;
     public static final int REQUEST_CODE_ATTACH_VIDEO     = 102;
@@ -213,7 +177,6 @@ public class ComposeMessageActivity extends Activity
     public static final int REQUEST_CODE_ECM_EXIT_DIALOG  = 107;
     public static final int REQUEST_CODE_ADD_CONTACT      = 108;
     public static final int REQUEST_CODE_PICK             = 109;
-    public static final int REQUEST_CODE_INSERT_CONTACT_INFO = 110;
 
     private static final String TAG = "Mms/compose";
 
@@ -236,7 +199,6 @@ public class ComposeMessageActivity extends Activity
     private static final int MENU_ADD_TO_CONTACTS       = 13;
 
     private static final int MENU_EDIT_MESSAGE          = 14;
-    private static final int MENU_INSERT_CONTACT_INFO   = 15;
     private static final int MENU_VIEW_SLIDESHOW        = 16;
     private static final int MENU_VIEW_MESSAGE_DETAILS  = 17;
     private static final int MENU_DELETE_MESSAGE        = 18;
@@ -254,17 +216,6 @@ public class ComposeMessageActivity extends Activity
     private static final int MENU_SAVE_RINGTONE         = 30;
     private static final int MENU_PREFERENCES           = 31;
     private static final int MENU_GROUP_PARTICIPANTS    = 32;
-    private static final int MENU_INSERT_EMOJI          = 33;
-    private static final int MENU_ADD_TEMPLATE          = 34;
-    private static final int MENU_ADD_TO_BLACKLIST      = 35;
-
-    private static final int DIALOG_TEMPLATE_SELECT     = 1;
-    private static final int DIALOG_TEMPLATE_NOT_AVAILABLE = 2;
-    private static final int LOAD_TEMPLATE_BY_ID        = 0;
-    private static final int LOAD_TEMPLATES             = 1;
-
-    // Add SMS to calendar reminder
-    private static final int MENU_ADD_TO_CALENDAR       = 35;
 
     private static final int RECIPIENTS_MAX_LENGTH = 312;
 
@@ -320,7 +271,6 @@ public class ComposeMessageActivity extends Activity
     private TextView mSendButtonMms;        // Press to send mms
     private ImageButton mSendButtonSms;     // Press to send sms
     private EditText mSubjectTextEditor;    // Text editor for MMS subject
-    private ImageButton mQuickEmoji;
 
     private AttachmentEditor mAttachmentEditor;
     private View mAttachmentEditorScrollView;
@@ -349,10 +299,6 @@ public class ComposeMessageActivity extends Activity
     private WorkingMessage mWorkingMessage;         // The message currently being composed.
 
     private AlertDialog mSmileyDialog;
-    private AlertDialog mEmojiDialog;
-    private View mEmojiView;
-    private boolean mEnableEmojis;
-    private boolean mEnableQuickEmojis;
 
     private boolean mWaitingForSubActivity;
     private int mLastRecipientCount;            // Used for warning the user on too many recipients.
@@ -368,13 +314,6 @@ public class ComposeMessageActivity extends Activity
     private AsyncDialog mAsyncDialog;   // Used for background tasks.
 
     private String mDebugRecipients;
-
-    private GestureLibrary mLibrary;
-    private SimpleCursorAdapter mTemplatesCursorAdapter;
-    private double mGestureSensitivity;
-
-    private int mInputMethod;
-
     private int mLastSmoothScrollPosition;
     private boolean mScrollOnSend;      // Flag that we need to scroll the list to the end.
 
@@ -384,13 +323,10 @@ public class ComposeMessageActivity extends Activity
                                             // value is maxint, then we jump to the end.
     private long mLastMessageId;
 
-    // Add SMS to calendar reminder
-    private static final String CALENDAR_EVENT_TYPE = "vnd.android.cursor.item/event";
-
     /**
      * Whether this activity is currently running (i.e. not paused)
      */
-    public static boolean mIsRunning;
+    private boolean mIsRunning;
 
     // we may call loadMessageAndDraft() from a few different places. This is used to make
     // sure we only load message+draft once.
@@ -401,8 +337,6 @@ public class ComposeMessageActivity extends Activity
     // state of mWorkingMessage. Also, if we are handling a Send or Forward Message Intent,
     // we should not load the draft.
     private boolean mShouldLoadDraft;
-
-    private UnicodeFilter mUnicodeFilter = null;
 
     private Handler mHandler = new Handler();
 
@@ -420,6 +354,10 @@ public class ComposeMessageActivity extends Activity
         logMsg = "[" + tid + "] [" + methodName + "] " + logMsg;
         Log.d(TAG, logMsg);
     }
+
+    //==========================================================
+    // Inner classes
+    //==========================================================
 
     private void editSlideshow() {
         // The user wants to edit the slideshow. That requires us to persist the slideshow to
@@ -644,7 +582,7 @@ public class ComposeMessageActivity extends Activity
         int msgCount = params[0];
         int remainingInCurrentMessage = params[2];
 
-        if (!MmsConfig.getSplitSmsEnabled() && !MmsConfig.getMultipartSmsEnabled()) {
+        if (!MmsConfig.getMultipartSmsEnabled()) {
             // The provider doesn't support multi-part sms's so as soon as the user types
             // an sms longer than one segment, we have to turn the message into an mms.
             mWorkingMessage.setLengthRequiresMms(msgCount > 1, true);
@@ -1135,10 +1073,6 @@ public class ComposeMessageActivity extends Activity
 
                 menu.add(0, MENU_COPY_MESSAGE_TEXT, 0, R.string.copy_message_text)
                 .setOnMenuItemClickListener(l);
-
-                // Add SMS to calendar reminder
-                menu.add(0, MENU_ADD_TO_CALENDAR, 0, R.string.menu_add_to_calendar)
-                        .setOnMenuItemClickListener(l);
             }
 
             addCallAndContactMenuItems(menu, l, msgItem);
@@ -1258,7 +1192,6 @@ public class ComposeMessageActivity extends Activity
 
         mWorkingMessage = newWorkingMessage;
         mWorkingMessage.setConversation(mConversation);
-        invalidateOptionsMenu();
 
         drawTopPanel(false);
 
@@ -1275,19 +1208,6 @@ public class ComposeMessageActivity extends Activity
     private void copyToClipboard(String str) {
         ClipboardManager clipboard = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
         clipboard.setPrimaryClip(ClipData.newPlainText(null, str));
-    }
-
-    // Add SMS to calendar reminder
-    private void addEventToCalendar(String subject, String description) {
-        Intent calendarIntent = new Intent(Intent.ACTION_INSERT);
-        Calendar calTime = Calendar.getInstance();
-        calendarIntent.setType(CALENDAR_EVENT_TYPE);
-        calendarIntent.putExtra(Events.TITLE, subject);
-        calendarIntent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, calTime.getTimeInMillis());
-        calTime.add(Calendar.MINUTE, 30);
-        calendarIntent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, calTime.getTimeInMillis());
-        calendarIntent.putExtra(Events.DESCRIPTION, description);
-        startActivity(calendarIntent);
     }
 
     private void forwardMessage(final MessageItem msgItem) {
@@ -1434,12 +1354,6 @@ public class ComposeMessageActivity extends Activity
 
                 case MENU_UNLOCK_MESSAGE: {
                     lockMessage(mMsgItem, false);
-                    return true;
-                }
-
-                // Add SMS to calendar reminder
-                case MENU_ADD_TO_CALENDAR: {
-                    addEventToCalendar(mMsgItem.mSubject, mMsgItem.mBody);
                     return true;
                 }
 
@@ -1950,56 +1864,14 @@ public class ComposeMessageActivity extends Activity
 
         resetConfiguration(getResources().getConfiguration());
 
-        SharedPreferences prefs = PreferenceManager
-                .getDefaultSharedPreferences((Context) ComposeMessageActivity.this);
-        mGestureSensitivity = prefs
-                .getInt(MessagingPreferenceActivity.GESTURE_SENSITIVITY_VALUE, 3);
-        boolean showGesture = prefs.getBoolean(MessagingPreferenceActivity.SHOW_GESTURE, false);
-        int unicodeStripping = prefs.getInt(MessagingPreferenceActivity.UNICODE_STRIPPING_VALUE,
-                MessagingPreferenceActivity.UNICODE_STRIPPING_LEAVE_INTACT);
-        mInputMethod = Integer.parseInt(prefs.getString(MessagingPreferenceActivity.INPUT_TYPE,
-                Integer.toString(InputType.TYPE_TEXT_VARIATION_SHORT_MESSAGE)));
-
-        mLibrary = TemplateGesturesLibrary.getStore(this);
-
-        int layout = R.layout.compose_message_activity;
-
-        GestureOverlayView gestureOverlayView = new GestureOverlayView(this);
-        View inflate = getLayoutInflater().inflate(layout, null);
-        gestureOverlayView.addView(inflate);
-        gestureOverlayView.setEventsInterceptionEnabled(true);
-        gestureOverlayView.setGestureVisible(showGesture);
-        gestureOverlayView.addOnGesturePerformedListener(this);
-        setContentView(gestureOverlayView);
+        setContentView(R.layout.compose_message_activity);
         setProgressBarVisibility(false);
-
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE |
-                WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
         // Initialize members for UI elements.
         initResourceRefs();
 
-        LengthFilter lengthFilter = new LengthFilter(MmsConfig.getMaxTextLimit());
-        mTextEditor.setFilters(new InputFilter[] { lengthFilter });
-
-        if (unicodeStripping != MessagingPreferenceActivity.UNICODE_STRIPPING_LEAVE_INTACT) {
-            boolean stripNonDecodableOnly =
-                    unicodeStripping == MessagingPreferenceActivity.UNICODE_STRIPPING_NON_DECODABLE;
-            mUnicodeFilter = new UnicodeFilter(stripNonDecodableOnly);
-        }
-
         mContentResolver = getContentResolver();
         mBackgroundQueryHandler = new BackgroundQueryHandler(mContentResolver);
-
-        mEnableEmojis = prefs.getBoolean(MessagingPreferenceActivity.ENABLE_EMOJIS, false);
-        mEnableQuickEmojis = prefs.getBoolean(MessagingPreferenceActivity.ENABLE_QUICK_EMOJIS, false);
-        if (mEnableQuickEmojis && mEnableEmojis) {
-            mQuickEmoji.setVisibility(View.VISIBLE);
-
-            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams)mTextEditor.getLayoutParams();
-            params.setMargins(0, 0, 0, 0);
-            mTextEditor.setLayoutParams(params);
-        }
 
         initialize(savedInstanceState, 0);
 
@@ -2301,7 +2173,7 @@ public class ComposeMessageActivity extends Activity
         // the thread. Unblocking occurs when we're done querying for the conversation
         // items.
         mConversation.blockMarkAsRead(true);
-        mConversation.markAsRead(true);         // dismiss any notifications for this convo
+        mConversation.markAsRead();         // dismiss any notifications for this convo
         startMsgListQuery();
         updateSendFailedNotification();
     }
@@ -2388,19 +2260,9 @@ public class ComposeMessageActivity extends Activity
             }
         }, 100);
 
-        // Load the selected input type
-        SharedPreferences prefs = PreferenceManager
-                .getDefaultSharedPreferences((Context) ComposeMessageActivity.this);
-        mInputMethod = Integer.parseInt(prefs.getString(MessagingPreferenceActivity.INPUT_TYPE,
-                Integer.toString(InputType.TYPE_TEXT_VARIATION_SHORT_MESSAGE)));
-        mTextEditor.setInputType(InputType.TYPE_CLASS_TEXT | mInputMethod
-                | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT
-                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-
         mIsRunning = true;
         updateThreadIdIfRunning();
-        mConversation.markAsRead(true);
+        mConversation.markAsRead();
     }
 
     @Override
@@ -2437,7 +2299,7 @@ public class ComposeMessageActivity extends Activity
             Log.v(TAG, "onPause: mSavedScrollPosition=" + mSavedScrollPosition);
         }
 
-        mConversation.markAsRead(true);
+        mConversation.markAsRead();
         mIsRunning = false;
     }
 
@@ -2788,10 +2650,6 @@ public class ComposeMessageActivity extends Activity
             }
         }
 
-        menu.add(0, MENU_ADD_TEMPLATE, 0, R.string.template_insert)
-            .setIcon(android.R.drawable.ic_menu_add)
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-
         if (isPreparedForSending()) {
             menu.add(0, MENU_SEND, 0, R.string.send).setIcon(android.R.drawable.ic_menu_send);
         }
@@ -2799,16 +2657,7 @@ public class ComposeMessageActivity extends Activity
         if (!mWorkingMessage.hasSlideshow()) {
             menu.add(0, MENU_INSERT_SMILEY, 0, R.string.menu_insert_smiley).setIcon(
                     R.drawable.ic_menu_emoticons);
-            SharedPreferences prefs = PreferenceManager
-                    .getDefaultSharedPreferences((Context) ComposeMessageActivity.this);
-
-            if (mEnableEmojis) {
-                menu.add(0, MENU_INSERT_EMOJI, 0, R.string.menu_insert_emoji);
-            }
         }
-
-        menu.add(0, MENU_INSERT_CONTACT_INFO, 0, R.string.menu_insert_contact_info)
-            .setIcon(android.R.drawable.ic_menu_add);
 
         if (getRecipients().size() > 1) {
             menu.add(0, MENU_GROUP_PARTICIPANTS, 0, R.string.menu_group_participants);
@@ -2829,19 +2678,13 @@ public class ComposeMessageActivity extends Activity
 
         buildAddAddressToContactMenuItem(menu);
 
-        // Add to Blacklist item (if enabled)
-        if (BlacklistUtils.isBlacklistEnabled(this)) {
-            menu.add(0, MENU_ADD_TO_BLACKLIST, 0, R.string.add_to_blacklist)
-                    .setIcon(R.drawable.ic_block_message_holo_dark)
-                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-        }
-
         menu.add(0, MENU_PREFERENCES, 0, R.string.menu_preferences).setIcon(
                 android.R.drawable.ic_menu_preferences);
 
         if (LogTag.DEBUG_DUMP) {
             menu.add(0, MENU_DEBUG_DUMP, 0, R.string.menu_debug_dump);
         }
+
         return true;
     }
 
@@ -2909,14 +2752,8 @@ public class ComposeMessageActivity extends Activity
             case MENU_INSERT_SMILEY:
                 showSmileyDialog();
                 break;
-            case MENU_INSERT_EMOJI:
-                showEmojiDialog();
-                break;
-            case MENU_INSERT_CONTACT_INFO:
-                Intent intentInsertContactInfo = new Intent(Intent.ACTION_PICK, Contacts.CONTENT_URI);
-                startActivityForResult(intentInsertContactInfo, REQUEST_CODE_INSERT_CONTACT_INFO);
-                break;
-            case MENU_GROUP_PARTICIPANTS: {
+            case MENU_GROUP_PARTICIPANTS:
+            {
                 Intent intent = new Intent(this, RecipientListActivity.class);
                 intent.putExtra(THREAD_ID, mConversation.getThreadId());
                 startActivity(intent);
@@ -2947,50 +2784,9 @@ public class ComposeMessageActivity extends Activity
                 Conversation.dump();
                 LogTag.dumpInternalTables(this);
                 break;
-            case MENU_ADD_TEMPLATE:
-                startLoadingTemplates();
-                break;
-            case MENU_ADD_TO_BLACKLIST:
-                confirmAddBlacklist();
-                break;
         }
 
         return true;
-    }
-
-    /**
-     *  Pop up a dialog confirming adding the current number to the blacklist
-     */
-    private void confirmAddBlacklist() {
-        //TODO: get the sender number
-        final String number = getSenderNumber();
-        if (TextUtils.isEmpty(number)) {
-            return;
-        }
-
-        // Show dialog
-        final String message = getString(R.string.add_to_blacklist_message, number);
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.add_to_blacklist)
-                .setMessage(message)
-                .setPositiveButton(R.string.alert_dialog_yes, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        BlacklistUtils.addOrUpdate(getApplicationContext(), number,
-                                BlacklistUtils.BLOCK_MESSAGES, BlacklistUtils.BLOCK_MESSAGES);
-                    }
-                })
-                .setNegativeButton(R.string.alert_dialog_no, null)
-                .show();
-    }
-
-    private String getSenderNumber() {
-        if (isRecipientCallable()) {
-            return getRecipients().get(0).getNumber().toString();
-        }
-
-        // Not a callable sender
-        return null;
     }
 
     private void confirmDeleteThread(long threadId) {
@@ -3216,10 +3012,6 @@ public class ComposeMessageActivity extends Activity
                 if (data != null) {
                     processPickResult(data);
                 }
-                break;
-
-            case REQUEST_CODE_INSERT_CONTACT_INFO:
-                showContactInfoDialog(data.getData());
                 break;
 
             default:
@@ -3546,17 +3338,10 @@ public class ComposeMessageActivity extends Activity
 
         CharSequence text = mWorkingMessage.getText();
 
-        SharedPreferences prefs = PreferenceManager
-                .getDefaultSharedPreferences((Context) ComposeMessageActivity.this);
-
         // TextView.setTextKeepState() doesn't like null input.
         if (text != null) {
-            // Restore the emojis if necessary
-            if (mEnableEmojis) {
-                mTextEditor.setTextKeepState(EmojiParser.getInstance().addEmojiSpans(text));
-            } else {
-                mTextEditor.setTextKeepState(text);
-            }
+            mTextEditor.setTextKeepState(text);
+
             // Set the edit caret to the end of the text.
             mTextEditor.setSelection(mTextEditor.length());
         } else {
@@ -3590,9 +3375,6 @@ public class ComposeMessageActivity extends Activity
         } else if ((v == mRecipientsPicker)) {
             launchMultiplePhonePicker();
         }
-        else if((v == mQuickEmoji)) {
-            showEmojiDialog();
-        }
     }
 
     private void launchMultiplePhonePicker() {
@@ -3618,23 +3400,14 @@ public class ComposeMessageActivity extends Activity
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
         if (event != null) {
-            boolean sendNow;
-            if (mInputMethod == InputType.TYPE_TEXT_VARIATION_LONG_MESSAGE) {
-                //if the user has selected enter
-                //for a new line the shift key must be pressed to send
-                sendNow = event.isShiftPressed();
-            } else {
-                //otherwise enter sends and shift must be pressed for a new line
-                sendNow = !event.isShiftPressed();
-            }
-
-            if (sendNow && event.getAction() == KeyEvent.ACTION_DOWN) {
+            // if shift key is down, then we want to insert the '\n' char in the TextView;
+            // otherwise, the default action is to send the message.
+            if (!event.isShiftPressed() && event.getAction() == KeyEvent.ACTION_DOWN) {
                 if (isPreparedForSending()) {
                     confirmSendMessageIfNeeded();
                 }
                 return true;
             }
-
             return false;
         }
 
@@ -3661,8 +3434,6 @@ public class ComposeMessageActivity extends Activity
 
             updateSendButtonState();
 
-            // strip unicode for counting characters
-            s = stripUnicodeIfRequested(s);
             updateCounter(s, start, before, count);
 
             ensureCorrectButtonHeight();
@@ -3758,8 +3529,6 @@ public class ComposeMessageActivity extends Activity
         mAttachmentEditor = (AttachmentEditor) findViewById(R.id.attachment_editor);
         mAttachmentEditor.setHandler(mAttachmentEditorHandler);
         mAttachmentEditorScrollView = findViewById(R.id.attachment_editor_scroll_view);
-        mQuickEmoji = (ImageButton) mBottomPanel.findViewById(R.id.quick_emoji_button_mms);
-        mQuickEmoji.setOnClickListener(this);
     }
 
     private void confirmDeleteDialog(OnClickListener listener, boolean locked) {
@@ -3973,8 +3742,6 @@ public class ComposeMessageActivity extends Activity
             // them back once the recipient list has settled.
             removeRecipientsListeners();
 
-            // strip unicode chars before sending (if applicable)
-            mWorkingMessage.setText(stripUnicodeIfRequested(mWorkingMessage.getText()));
             mWorkingMessage.send(mDebugRecipients);
 
             mSentMessage = true;
@@ -4311,14 +4078,12 @@ public class ComposeMessageActivity extends Activity
                     int newSelectionPos = -1;
                     long targetMsgId = getIntent().getLongExtra("select_id", -1);
                     if (targetMsgId != -1) {
-                        if (cursor != null) {
-                            cursor.moveToPosition(-1);
-                            while (cursor.moveToNext()) {
-                                long msgId = cursor.getLong(COLUMN_ID);
-                                if (msgId == targetMsgId) {
-                                    newSelectionPos = cursor.getPosition();
-                                    break;
-                                }
+                        cursor.moveToPosition(-1);
+                        while (cursor.moveToNext()) {
+                            long msgId = cursor.getLong(COLUMN_ID);
+                            if (msgId == targetMsgId) {
+                                newSelectionPos = cursor.getPosition();
+                                break;
                             }
                         }
                     } else if (mSavedScrollPosition != -1) {
@@ -4350,7 +4115,7 @@ public class ComposeMessageActivity extends Activity
                     } else {
                         int count = mMsgListAdapter.getCount();
                         long lastMsgId = 0;
-                        if (cursor != null && count > 0) {
+                        if (count > 0) {
                             cursor.moveToLast();
                             lastMsgId = cursor.getLong(COLUMN_ID);
                         }
@@ -4374,8 +4139,7 @@ public class ComposeMessageActivity extends Activity
                     // mSentMessage is true).
                     // Show the recipients editor to give the user a chance to add
                     // more people before the conversation begins.
-                    if (cursor != null && cursor.getCount() == 0
-                            && !isRecipientsEditorVisible() && !mSentMessage) {
+                    if (cursor.getCount() == 0 && !isRecipientsEditorVisible() && !mSentMessage) {
                         initRecipientsEditor();
                     }
 
@@ -4509,8 +4273,8 @@ public class ComposeMessageActivity extends Activity
                 if (!added) {
                     HashMap<String, Object> entry = new HashMap<String, Object>();
 
-                    entry.put("icon", icons[i]);
-                    entry.put("name", names[i]);
+                    entry. put("icon", icons[i]);
+                    entry. put("name", names[i]);
                     entry.put("text", texts[i]);
 
                     entries.add(entry);
@@ -4546,21 +4310,13 @@ public class ComposeMessageActivity extends Activity
                 @SuppressWarnings("unchecked")
                 public final void onClick(DialogInterface dialog, int which) {
                     HashMap<String, Object> item = (HashMap<String, Object>) a.getItem(which);
-                    EditText mToInsert;
 
                     String smiley = (String)item.get("text");
-                    // tag EditText to insert to
                     if (mSubjectTextEditor != null && mSubjectTextEditor.hasFocus()) {
-                        mToInsert = mSubjectTextEditor;
+                        mSubjectTextEditor.append(smiley);
                     } else {
-                        mToInsert = mTextEditor;
+                        mTextEditor.append(smiley);
                     }
-                    // Insert the smiley text at current cursor position in editText
-                    // math funcs deal with text selected in either direction
-                    //
-                    int start = mToInsert.getSelectionStart();
-                    int end = mToInsert.getSelectionEnd();
-                    mToInsert.getText().replace(Math.min(start, end), Math.max(start, end), smiley);
 
                     dialog.dismiss();
                 }
@@ -4570,229 +4326,6 @@ public class ComposeMessageActivity extends Activity
         }
 
         mSmileyDialog.show();
-    }
-
-    private void showEmojiDialog() {
-        if (mEmojiDialog == null) {
-            int[] icons = EmojiParser.DEFAULT_EMOJI_RES_IDS;
-
-            int layout = R.layout.emoji_insert_view;
-            mEmojiView = getLayoutInflater().inflate(layout, null);
-
-            final GridView gridView = (GridView) mEmojiView.findViewById(R.id.emoji_grid_view);
-            gridView.setAdapter(new ImageAdapter(this, icons));
-            final EditText editText = (EditText) mEmojiView.findViewById(R.id.emoji_edit_text);
-            final Button button = (Button) mEmojiView.findViewById(R.id.emoji_button);
-
-            SharedPreferences prefs = PreferenceManager
-                    .getDefaultSharedPreferences((Context) ComposeMessageActivity.this);
-            final boolean useSoftBankEmojiEncoding = prefs.getBoolean(MessagingPreferenceActivity.SOFTBANK_EMOJIS, false);
-
-            gridView.setOnItemClickListener(new OnItemClickListener() {
-                public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                    // We use the new unified Unicode 6.1 emoji code points by default
-                    CharSequence emoji;
-                    if (useSoftBankEmojiEncoding) {
-                        emoji = EmojiParser.getInstance().addEmojiSpans(EmojiParser.mSoftbankEmojiTexts[position]);
-                    } else {
-                        emoji = EmojiParser.getInstance().addEmojiSpans(EmojiParser.mEmojiTexts[position]);
-                    }
-                    editText.append(emoji);
-                }
-            });
-
-            gridView.setOnItemLongClickListener(new OnItemLongClickListener() {
-                @Override
-                public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
-                        long id) {
-                    // We use the new unified Unicode 6.1 emoji code points by default
-                    CharSequence emoji;
-                    if (useSoftBankEmojiEncoding) {
-                        emoji = EmojiParser.getInstance().addEmojiSpans(EmojiParser.mSoftbankEmojiTexts[position]);
-                    } else {
-                        emoji = EmojiParser.getInstance().addEmojiSpans(EmojiParser.mEmojiTexts[position]);
-                    }
-                    EditText mToInsert;
-
-                    // tag edit text to insert to
-                    if (mSubjectTextEditor != null && mSubjectTextEditor.hasFocus()) {
-                        mToInsert = mSubjectTextEditor;
-                    } else {
-                        mToInsert = mTextEditor;
-                    }
-                    // insert the emoji at the cursor location or replace selected
-                    int start = mToInsert.getSelectionStart();
-                    int end = mToInsert.getSelectionEnd();
-                    mToInsert.getText().replace(Math.min(start, end), Math.max(start, end), emoji);
-
-                    mEmojiDialog.dismiss();
-                    return true;
-                }
-            });
-
-            button.setOnClickListener(new android.view.View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                     EditText mToInsert;
-
-                    // tag edit text to insert to
-                    if (mSubjectTextEditor != null && mSubjectTextEditor.hasFocus()) {
-                        mToInsert = mSubjectTextEditor;
-                    } else {
-                        mToInsert = mTextEditor;
-                    }
-                    // insert the emoji at the cursor location or replace selected
-                    int start = mToInsert.getSelectionStart();
-                    int end = mToInsert.getSelectionEnd();
-                    mToInsert.getText().replace(Math.min(start, end), Math.max(start, end),
-                            editText.getText());
-
-                    mEmojiDialog.dismiss();
-                }
-            });
-
-            AlertDialog.Builder b = new AlertDialog.Builder(this);
-
-            b.setTitle(getString(R.string.menu_insert_emoji));
-
-            b.setCancelable(true);
-            b.setView(mEmojiView);
-
-            mEmojiDialog = b.create();
-        }
-
-        final EditText editText = (EditText) mEmojiView.findViewById(R.id.emoji_edit_text);
-        editText.setText("");
-
-        mEmojiDialog.show();
-    }
-
-    private CharSequence[] getContactInfoData(long contactId) {
-        final String[] projection = new String[] {
-            Data.DATA1, Data.DATA2, Data.DATA3, Data.MIMETYPE
-        };
-        final String where = Data.CONTACT_ID + "=? AND ("
-                + Data.MIMETYPE + "=? OR "
-                + Data.MIMETYPE + "=? OR "
-                + Data.MIMETYPE + "=? OR "
-                + Data.MIMETYPE + "=? OR "
-                + Data.MIMETYPE + "=?)";
-        final String[] whereArgs = new String[] {
-            String.valueOf(contactId),
-            CommonDataKinds.Phone.CONTENT_ITEM_TYPE,
-            CommonDataKinds.Email.CONTENT_ITEM_TYPE,
-            CommonDataKinds.Event.CONTENT_ITEM_TYPE,
-            CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE,
-            CommonDataKinds.Website.CONTENT_ITEM_TYPE
-        };
-
-        final Cursor cursor = getContentResolver().query(Data.CONTENT_URI,
-                projection, where, whereArgs, Data.MIMETYPE);
-
-        if (cursor == null) {
-            return null;
-        }
-
-        final int count = cursor.getCount();
-        final int dataIndex = cursor.getColumnIndex(Data.DATA1);
-        final int typeIndex = cursor.getColumnIndex(Data.DATA2);
-        final int labelIndex = cursor.getColumnIndex(Data.DATA3);
-        final int mimeTypeIndex = cursor.getColumnIndex(Data.MIMETYPE);
-
-        if (count == 0) {
-            cursor.close();
-            return null;
-        }
-
-        final CharSequence[] entries = new CharSequence[count];
-
-        for (int i = 0; i < count; i++) {
-            cursor.moveToPosition(i);
-
-            String data = cursor.getString(dataIndex);
-            int type = cursor.getInt(typeIndex);
-            String label = cursor.getString(labelIndex);
-            String mimeType = cursor.getString(mimeTypeIndex);
-
-            if (mimeType.equals(Phone.CONTENT_ITEM_TYPE)) {
-                entries[i] = Phone.getTypeLabel(getResources(), type, label) + ": " + data;
-            } else if (mimeType.equals(Email.CONTENT_ITEM_TYPE)) {
-                entries[i] = Email.getTypeLabel(getResources(), type, label) + ": " + data;
-            } else if (mimeType.equals(Event.CONTENT_ITEM_TYPE)) {
-                data = DateUtils.formatDate(getApplicationContext(), data);
-                int typeResource = Event.getTypeResource(type);
-
-                if (typeResource != com.android.internal.R.string.eventTypeCustom) {
-                    label = getString(typeResource);
-                }
-                entries[i] = label + ": " + data;
-            } else if (mimeType.equals(StructuredPostal.CONTENT_ITEM_TYPE)) {
-                entries[i] = StructuredPostal.getTypeLabel(getResources(), type, label)
-                        + ": " + data;
-            } else {
-                entries[i] = data;
-            }
-        }
-
-        cursor.close();
-
-        return entries;
-    }
-
-    private void showContactInfoDialog(Uri contactUri) {
-        long contactId = -1;
-        String displayName = null;
-
-        final String[] projection = new String[] {
-            Contacts._ID, Contacts.DISPLAY_NAME
-        };
-        final Cursor cursor = getContentResolver().query(contactUri,
-                projection, null, null, null);
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                contactId = cursor.getLong(0);
-                displayName = cursor.getString(1);
-            }
-            cursor.close();
-        }
-
-        final CharSequence[] entries = (contactId >= 0) ? getContactInfoData(contactId) : null;
-
-        if (contactId < 0 || entries == null) {
-            Toast.makeText(this, R.string.cannot_find_contact, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        final boolean[] itemsChecked = new boolean[entries.length];
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setIcon(R.drawable.ic_contact_picture);
-        builder.setTitle(displayName);
-
-        builder.setMultiChoiceItems(entries, null, new DialogInterface.OnMultiChoiceClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which, boolean isChecked) {
-                itemsChecked[which] = isChecked;
-            }
-        });
-
-        builder.setPositiveButton(R.string.insert_contact_info_positive_button,
-                new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                for (int i = 0; i < entries.length; i++) {
-                    if (itemsChecked[i]) {
-                        int start = mTextEditor.getSelectionStart();
-                        int end = mTextEditor.getSelectionEnd();
-                        mTextEditor.getText().replace(
-                                Math.min(start, end), Math.max(start, end), entries[i] + "\n");
-                    }
-                }
-            }
-        });
-        builder.setNegativeButton(android.R.string.cancel, null);
-
-        builder.show();
     }
 
     @Override
@@ -4867,107 +4400,12 @@ public class ComposeMessageActivity extends Activity
                         mConversation.getThreadId());
             }
             MessagingNotification.setCurrentlyDisplayedThreadId(mConversation.getThreadId());
+        } else {
+            if (DEBUG) {
+                Log.v(TAG, "updateThreadIdIfRunning: mIsRunning: " + mIsRunning +
+                        " mConversation: " + mConversation);
+            }
         }
         // If we're not running, but resume later, the current thread ID will be set in onResume()
-    }
-
-    private void startLoadingTemplates() {
-        setProgressBarIndeterminateVisibility(true);
-        getLoaderManager().restartLoader(LOAD_TEMPLATES, null, this);
-    }
-
-    private CharSequence stripUnicodeIfRequested(CharSequence text) {
-        if (mUnicodeFilter != null) {
-            text = mUnicodeFilter.filter(text);
-        }
-        return text;
-    }
-
-    @Override
-    public void onGesturePerformed(GestureOverlayView overlay, Gesture gesture) {
-        ArrayList<Prediction> predictions = mLibrary.recognize(gesture);
-        for (Prediction prediction : predictions) {
-            if (prediction.score > mGestureSensitivity) {
-                Bundle b = new Bundle();
-                b.putLong("id", Long.parseLong(prediction.name));
-                getLoaderManager().initLoader(LOAD_TEMPLATE_BY_ID, b, this);
-            }
-        }
-    }
-
-    @Override
-    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        if (id == LOAD_TEMPLATE_BY_ID) {
-            long rowID = args.getLong("id");
-            Uri uri = ContentUris.withAppendedId(Template.CONTENT_URI, rowID);
-            return new CursorLoader(this, uri, null, null, null, null);
-        } else {
-            return new CursorLoader(this, Template.CONTENT_URI, null, null, null, null);
-        }
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-
-        if (loader.getId() == LOAD_TEMPLATE_BY_ID) {
-            if (data != null && data.getCount() > 0) {
-                data.moveToFirst();
-                // insert template text from gesture at cursor
-                String text = data.getString(data.getColumnIndex(Template.TEXT));
-                int start = mTextEditor.getSelectionStart();
-                int end = mTextEditor.getSelectionEnd();
-                mTextEditor.getText().replace(Math.min(start, end),
-                        Math.max(start, end), text);
-            }
-        }else{
-            setProgressBarIndeterminateVisibility(false);
-            if(data != null && data.getCount() > 0){
-                showDialog(DIALOG_TEMPLATE_SELECT);
-                mTemplatesCursorAdapter.swapCursor(data);
-            }else{
-                showDialog(DIALOG_TEMPLATE_NOT_AVAILABLE);
-            }
-        }
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
-    }
-
-    @Override
-    protected Dialog onCreateDialog(int id, Bundle args) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        switch (id) {
-            case DIALOG_TEMPLATE_NOT_AVAILABLE:
-                builder.setTitle(R.string.template_not_present_error_title);
-                builder.setMessage(R.string.template_not_present_error);
-                return builder.create();
-
-            case DIALOG_TEMPLATE_SELECT:
-                builder = new AlertDialog.Builder(this);
-                builder.setTitle(R.string.template_select);
-                mTemplatesCursorAdapter  = new SimpleCursorAdapter(this,
-                        android.R.layout.simple_list_item_1, null, new String[] {
-                        Template.TEXT
-                    }, new int[] {
-                        android.R.id.text1
-                    }, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-                builder.setAdapter(mTemplatesCursorAdapter, new DialogInterface.OnClickListener(){
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                       Cursor c = (Cursor) mTemplatesCursorAdapter.getItem(which);
-                       String text = c.getString(c.getColumnIndex(Template.TEXT));
-
-                       // insert selected template text at the cursor location or replace selected
-                       int start = mTextEditor.getSelectionStart();
-                       int end = mTextEditor.getSelectionEnd();
-                       mTextEditor.getText().replace(Math.min(start, end),
-                               Math.max(start, end), text);
-                    }
-
-                });
-                return builder.create();
-        }
-        return super.onCreateDialog(id, args);
     }
 }

@@ -20,10 +20,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="com.android.mms">
 
-    <uses-sdk
-        android:minSdkVersion="14"
-        android:targetSdkVersion="16" />
-
     <original-package android:name="com.android.mms" />
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -52,9 +48,9 @@
 
     <!-- Grant permission to system apps to access receiver -->
     <permission android:name="android.permission.MMS_PUSH"
-            android:protectionLevel="signatureOrSystem"
-            android:label="@string/label_mms_push"
-            android:description="@string/desc_mms_push"/>
+                android:protectionLevel="signatureOrSystem"
+                android:label="@string/label_mms_push"
+                android:description="@string/desc_mms_push"/>
     <uses-permission android:name="android.permission.MMS_PUSH"/>
 
     <application android:name="MmsApp"
@@ -219,13 +215,6 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".transaction.MmsSystemPushMsgReceiver"
-                android:permission="android.permission.MMS_PUSH">
-            <intent-filter>
-                <action android:name="android.intent.action.MMS_PUSH" />
-            </intent-filter>
-        </receiver>
-
         <activity android:name=".ui.ManageSimMessages"
                   android:theme="@style/MmsHoloTheme"
                   android:launchMode="singleTop"
@@ -244,24 +233,18 @@
             </intent-filter>
         </receiver>
 
-        <!-- Require sender permissions as it can be used to indirectly send SMS -->
-        <receiver android:name=".transaction.PrivilegedSmsReceiver"
-            android:permission="android.permission.SEND_SMS">
-            <intent-filter>
-                <action android:name="com.android.mms.transaction.SEND_MESSAGE" />
-            </intent-filter>
-        </receiver>
-
         <!-- Catch-all receiver for broadcasts that don't have associated security -->
         <receiver android:name=".transaction.SmsReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="com.android.mms.action.REMOVE_BLACKLIST" />
             </intent-filter>
             <intent-filter>
                 <action android:name="com.android.mms.transaction.MESSAGE_SENT" />
                 <!-- TODO Do a better data match here. -->
                 <data android:scheme="content" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MESSAGE" />
             </intent-filter>
         </receiver>
 
@@ -359,21 +342,32 @@
                  android:permission="android.permission.BIND_REMOTEVIEWS"
                  android:exported="false" />
 
-        <!-- Templates support -->
         <activity
             android:name=".templates.TemplatesListActivity"
             android:theme="@style/MmsHoloTheme"
             android:label="@string/template_list_title" >
         </activity>
-
         <activity android:name=".templates.TemplateEditor"
             android:theme="@style/MmsHoloTheme"
             android:label="@string/template_new_title">
         </activity>
-
+        <activity
+            android:name=".themes.ThemesConversationList"
+            android:theme="@style/MmsHoloTheme"
+            android:label="@string/themes_conv_list_title" >
+        </activity>
+        <activity
+            android:name=".themes.ThemesMessageList"
+            android:theme="@style/MmsHoloTheme"
+            android:label="@string/themes_msg_list_title" >
+        </activity>
+        <activity
+            android:name=".themes.ThemesWidgets"
+            android:theme="@style/MmsHoloTheme"
+            android:label="@string/themes_widget_title" >
+        </activity>
         <provider
             android:name=".templates.TemplatesProvider"
-            android:exported="true"
             android:authorities="com.android.cm.mms" />
 
         <!-- QuickMessage support -->
@@ -398,5 +392,6 @@
 
          <receiver android:name=".quickmessage.ClearAllReceiver" />
 
-        </application>
+    </application>
+
 </manifest>

@@ -66,7 +66,7 @@ public class MmsSystemPushMsgReceiver extends BroadcastReceiver {
             Log.v(TAG, "Intent received: " + intent);
         }
         String action = intent.getAction();
-        if(action.equalsIgnoreCase(INTENT_MMS_PUSH)){
+        if (action.equalsIgnoreCase(INTENT_MMS_PUSH)) {
             Log.d(TAG,"MMS Debug: Received MMS_PUSH intent calling wakeUpService");
             wakeUpService(context);
         }

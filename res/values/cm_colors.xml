@@ -32,7 +32,8 @@
     <color name="button_text">#ffffffff</color>
     <color name="message_received">#ffffffff</color>
     <color name="message_sent">#ffffffff</color>
-    <color name="widget_unread_text">#ff202020</color>
+    <color name="widget_unread_text">#ffdddddd</color>
+    <color name="widget_unread_text_light">#ff202020</color>
     <color name="widget_loading">#ffffffff</color>
 
     <!-- New Background colors from layouts to make theme chooser apk easier to theme -->
@@ -40,7 +41,7 @@
     <color name="darkgray_backgrounds">#ff111111</color>
     <color name="quickmessage_body_dark_bg">#ff010101</color>
     <color name="quickmessage_body_light_bg">#fff3f3f3</color>
-    <color name="dividers">#eeeeee</color>
+    <color name="dividers">#ff202020</color>
     <color name="transparent">#00000000</color>
 
 </resources>

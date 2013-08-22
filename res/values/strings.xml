@@ -776,5 +776,22 @@
     <!-- In message list items, this string builds the timestamp line when the message is in a group [CHAR LIMIT=NONE] -->
     <string name="message_timestamp_format"><xliff:g id="string" example="Fred Flinstone">%1$s</xliff:g>\u0020-\u0020<xliff:g id="string" example="9:39AM">%2$s</xliff:g></string>
 
+    <!-- MMS THEME SETTINGS -->
+    <string name="mms_themes">Mms theme settings</string>
+    <string name="themes_summary">Change the way mms looks</string>
+    <string name="themes_conv_list_title">Conversations list view</string>
+    <string name="themes_conv_list_summary">Change conversation list view style, text colors, and more.</string>
+    <string name="themes_msg_list_title">Message list view</string>
+    <string name="themes_msg_list_summary">Change messaging list view style, text colors, and more</string>
+    <string name="themes_widget_title">Widgets theme style</string>
+    <string name="themes_widget_summary">Change widget style dark/light, and set the text colors</string>
+    <string name="background_colors">Background</string>
+    <string name="restore_defaults">Restore default settings</string>
+    <string name="delete_custom_image">Delete background image</string>
+    <string name="custom_image_title">Custom image</string>
+    <string name="custom_image_summary">Set an image for the background</string>
+    <string name="restart_mms_title">Restart Mms</string>
+    <string name="restart_mms_summary">Some settings like custom image require mms to be restarted to take effect therefore we have this nice restart right here **setting widget from dark to light or the other way around you should remove and put the widget back on</string>
+
 </resources>
 

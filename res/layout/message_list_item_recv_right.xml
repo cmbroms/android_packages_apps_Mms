@@ -20,7 +20,7 @@
 
 <com.android.mms.ui.MessageListItem
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/msg_list_item_send"
+    android:id="@+id/msg_list_item_recv"
     android:background="@color/transparent"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -54,11 +54,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_toLeftOf="@id/avatar"
-                android:layout_alignRight="@id/avatar"
+                android:layout_alignParentRight="true"
                 android:layout_marginRight="@dimen/message_block_margin_left_right"
                 android:layout_marginLeft="@dimen/message_block_margin_left_right_noavatar"
                 android:minHeight="@dimen/avatar_width_height"
-                android:orientation="vertical">
+                android:orientation="vertical" >
 
                 <TextView android:id="@+id/text_view"
                     android:autoLink="all"
@@ -68,7 +68,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:linksClickable="false"
-                    android:gravity="right"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="@color/message_sent"
                     android:textSize="16sp" />
@@ -93,32 +92,36 @@
                         android:id="@+id/delivered_indicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingRight="3dip"
                         android:src="@drawable/ic_sms_mms_delivered"
+                        android:paddingRight="3dip"
                         android:visibility="gone" />
 
                     <ImageView
                         android:id="@+id/details_indicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingRight="3dip"
                         android:src="@drawable/ic_sms_mms_details"
                         android:visibility="gone" />
 
                     <TextView android:id="@+id/date_view"
-                        android:background="@drawable/listitem_background"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:paddingRight="3dip"
                         android:textAppearance="?android:attr/textAppearanceSmall"
                         android:textColor="@color/text_hairline" />
+
                 </LinearLayout>
 
                 <ViewStub android:id="@+id/mms_layout_view_stub"
                     android:layout="@layout/mms_layout_view"
+                    android:layout_below="@id/status_view"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"/>
-            </LinearLayout>
+
+            </RelativeLayout>
+
         </RelativeLayout>
+
     </LinearLayout>
 
     <ViewStub android:id="@+id/mms_downloading_view_stub"

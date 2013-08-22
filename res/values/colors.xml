@@ -17,6 +17,7 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
     <!-- Activity background color -->
     <drawable name="class_zero_background">#7f000000</drawable>
 
@@ -38,6 +39,31 @@
     <color name="widget_subject_text_color_read">#ffbfbfbf</color>
     <color name="widget_subject_text_color_unread">#ffcfcfcf</color>
 
+    <!-- Color of the text for buttons in the action bar  -->
+    <color name="action_bar_button_text_color">#ffefefef</color>
+
+    <!-- New text colors from layouts to make theme chooser apk easier to theme -->
+    <color name="compose_message_edit_text">#ffffffff</color>
+    <color name="compose_message_text_counter">#ddffffff</color>
+    <color name="actionbar_text">#ffdddddd</color>
+    <color name="delete_thread_dialog">#ffcccccc</color>
+    <color name="delivery_report_header">#ffeeeeee</color>
+    <color name="delivery_report_recipient">#ffffffff</color>
+    <color name="delivery_report_status">#ffcccccc</color>
+    <color name="delivery_report_date">#ffcccccc</color>
+    <color name="button_text">#ffffffff</color>
+    <color name="message_received">#ffffffff</color>
+    <color name="message_sent">#ffffffff</color>
+    <color name="widget_unread_text">#ffdddddd</color>
+    <color name="widget_unread_text_light">#ff202020</color>
+    <color name="widget_loading">#ffffffff</color>
+
+    <!-- New Background colors from layouts to make theme chooser apk easier to theme -->
+    <color name="background">#ff000000</color>
+    <color name="darkgray_backgrounds">#ff111111</color>
+    <color name="dividers">#ff202020</color>
+    <color name="transparent">#00000000</color>
+
     <!-- Quick messaging colors -->
     <color name="qm_light_bg">#ffeeeeee</color>
     <color name="qm_light_text">#ff101010</color>
@@ -46,6 +72,8 @@
     <color name="qm_dark_bg">#ff020202</color>
     <color name="qm_dark_text">#ffefefef</color>
     <color name="qm_dark_text_fade">#ffafafaf</color>
+    <color name="quickmessage_body_dark_bg">#ff010101</color>
+    <color name="quickmessage_body_light_bg">#fff3f3f3</color>
 
     <!-- widget background colors for unread/read -->
     <color name="widget_unread_bgcolor">#8f2f2f2f</color>

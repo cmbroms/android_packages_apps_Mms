@@ -59,7 +59,6 @@
                 android:layout_alignLeft="@id/avatar"
                 android:layout_marginLeft="@dimen/message_block_margin_left_right"
                 android:layout_marginRight="@dimen/message_block_margin_left_right_noavatar"
-                android:minHeight="@dimen/avatar_width_height"
                 android:orientation="vertical" >
 
                 <TextView android:id="@+id/text_view"
@@ -71,7 +70,7 @@
                     android:layout_height="wrap_content"
                     android:linksClickable="false"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="@color/message_received"
+                    android:textColor="@color/message_recieved"
                     android:textSize="16sp" />
 
                 <LinearLayout

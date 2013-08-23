@@ -28,6 +28,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <view class="android.widget.QuickContactBadge"
+            android:id="@+id/avatar"
+            android:layout_alignParentLeft="true"
+            android:layout_width="@dimen/avatar_width_height"
+            android:layout_height="@dimen/avatar_width_height" />
+
         <LinearLayout
             android:id="@+id/message_block"
             android:minHeight="@dimen/avatar_width_height"

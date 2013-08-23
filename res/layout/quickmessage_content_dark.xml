@@ -28,6 +28,16 @@
         android:padding="4dip"
         android:layout_gravity="left" >
 
+        <android.widget.QuickContactBadge
+            android:id="@+id/contactBadge"
+            android:layout_width="40dip"
+            android:layout_height="40dip"
+            android:layout_gravity="center"
+            android:background="@drawable/ic_contact_picture"
+            android:clickable="false"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_contact_picture" />
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -73,8 +83,8 @@
         android:layout_weight="1"
         android:fillViewport="true"
         android:minHeight="72dp"
-        android:paddingTop="4dp"
         android:background="@color/qm_dark_bg"
+        android:paddingTop="4dp"
         android:paddingBottom="4dp" >
 
         <TextView

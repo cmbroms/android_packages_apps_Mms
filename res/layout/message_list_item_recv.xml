@@ -112,7 +112,6 @@
                     android:layout_height="wrap_content"/>
             </LinearLayout>
         </RelativeLayout>
-     </RelativeLayout>  
   </LinearLayout>
 
     <ViewStub android:id="@+id/mms_downloading_view_stub"

@@ -24,6 +24,12 @@
     android:background="@color/transparent"
     android:paddingRight="10dip" >
 
+    <android.widget.QuickContactBadge
+        android:id="@+id/avatar"
+        android:visibility="gone"
+        android:layout_centerVertical="true"
+        style="?android:attr/quickContactBadgeStyleWindowLarge" />
+
     <TextView android:id="@+id/from"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

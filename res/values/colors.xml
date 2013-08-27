@@ -31,7 +31,7 @@
     <color name="timestamp_color">#7cefefef</color>
 
     <!-- the background color used for unread conversation -->
-    <color name="unread_bgcolor">#55afafaf</color>
+    <color name="unread_bgcolor">#779ab7de</color>
     <color name="read_bgcolor">#55000000</color>
 
     <color name="widget_sender_text_color_read">#ffdfdfdf</color>

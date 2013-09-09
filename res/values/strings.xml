@@ -1027,5 +1027,14 @@
     <string name="widget_date_textcolor_read">Read date text</string>
     <string name="widget_date_textcolor_unread">Unread date text</string>
 
+    <!-- Multi recipients -->
+    <string name="select_recipients">Select recipients</string>
+    <string name="groups_header">Groups</string>
+    <string name="no_recipients">No contacts found</string>
+    <string name="no_recipients_mobile_only">No matching contacts found. Try without the \'Mobile numbers only\' filter</string>
+    <string name="menu_done">Done</string>
+    <string name="menu_mobile">Mobile numbers only</string>
+    <string name="menu_groups">Show groups</string>
+    <string name="fastscroll_index_groups">GR</string> <!-- CHAR LIMIT=3 -->
 </resources>
 

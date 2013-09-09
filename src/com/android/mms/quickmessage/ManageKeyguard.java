@@ -36,10 +36,6 @@ public class ManageKeyguard {
     public static synchronized void disableKeyguard(Context context) {
         initialize(context);
 
-        if (mKeyguardManager.isKeyguardSecure()) {
-            return;
-        }
-
         if (mKeyguardManager.inKeyguardRestrictedInputMode()) {
             mKeyguardLock = mKeyguardManager.newKeyguardLock(LOGTAG);
             mKeyguardLock.disableKeyguard();

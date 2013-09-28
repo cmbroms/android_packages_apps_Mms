@@ -30,8 +30,8 @@
 
         <android.widget.QuickContactBadge
             android:id="@+id/contactBadge"
-            android:layout_width="40dip"
-            android:layout_height="40dip"
+            android:layout_width="70dip"
+            android:layout_height="70dip"
             android:layout_gravity="center"
             android:background="@drawable/ic_contact_picture"
             android:clickable="false"

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2007 The Android Open Source Project
+<!-- Copyright (C) 2013 The CyanogenMod Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -13,14 +13,13 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_selected="true"
-        android:drawable="@android:color/transparent" />
-    <item android:state_pressed="true" android:state_selected="false"
-        android:drawable="@android:color/transparent" />
-    <item android:state_selected="false" android:state_activated="false"
-        android:drawable="@color/unread_bgcolor" />
-    <item android:state_activated="true"
-        android:drawable="@drawable/list_selector_background_selected" />
-</selector>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <plurals name="template_confirm_delete_conversation">
+        <item quantity="one">S\'ha esborrat una plantilla.</item>
+        <item quantity="other"><xliff:g id="number" example="15">%1$s</xliff:g> plantilles s\'esborraran.</item>
+    </plurals>
+    <plurals name="remaining_delay_time">
+        <item quantity="one">Enviament en 1 segon, toca per cancel·lar.</item>
+        <item quantity="other">Enviament en %1$d segons, toca per cancel·lar.</item>
+    </plurals>
+</resources>

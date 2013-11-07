@@ -17,7 +17,6 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-
     <!-- Activity background color -->
     <drawable name="class_zero_background">#7f000000</drawable>
 
@@ -52,8 +51,7 @@
     <color name="delivery_report_status">#ffcccccc</color>
     <color name="delivery_report_date">#ffcccccc</color>
     <color name="button_text">#ffffffff</color>
-    <color name="message_received">#ffffffff</color>
-    <color name="message_recieved">#ffffffff</color>
+    <color name="message_received">#ff33b5e5</color>
     <color name="message_sent">#ffffffff</color>
     <color name="widget_unread_text">#ffdddddd</color>
     <color name="widget_unread_text_light">#ff202020</color>
@@ -61,7 +59,7 @@
 
     <!-- New Background colors from layouts to make theme chooser apk easier to theme -->
     <color name="background">#ff000000</color>
-    <color name="darkgray_backgrounds">#ff111111</color>
+    <color name="darkgray_backgrounds">#8f2f2f2f</color>
     <color name="dividers">#ff202020</color>
     <color name="transparent">#00000000</color>
 

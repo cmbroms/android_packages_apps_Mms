@@ -114,7 +114,7 @@
     <!-- Menu item in slideshow edit screen for moving the selected slide down in the order -->
     <string name="move_down">Move down</string>
     <!-- Menu item in slideshow edit screen for removing the selected slide from the slideshow -->
-    <string name="remove_slide">Remove slide</string>
+    <string name="remove_slide">Remove slide</string> 
     <!-- Menu item in slideshow edit screen for adding a new slide to the slideshow -->
     <string name="add_slide">Add slide</string>
     <!-- Text displayed below "Add slide" item in slideshow edit screen -->
@@ -165,16 +165,7 @@
     <string name="mms">MMS</string>
     <!-- Content description for the send button when sending an mms (imperative verb) -->
     <string name="send_mms">Send MMS</string>
-    <!-- Text to appear directly below the "Send" text on the MMS send button in case of DSDS. -->
-    <string name="mms1">MMS1</string>
-    <string name="mms2">MMS2</string>
-    <string name="mms3">MMS3</string>
-    <!-- Set Subscription screen: label sub 1 -->
-    <string name="sub1">SUB 1</string>
-    <!-- Set Subscription screen: label sub 2 -->
-    <string name="sub2">SUB 2</string>
-    <!-- Set Subscription screen: label sub 3 -->
-    <string name="sub3">SUB 3</string>
+
     <!-- Menu item in conversation screen for returning to the conversation list -->
     <string name="all_threads">All threads</string>
 
@@ -182,6 +173,10 @@
     <string name="type_to_compose_text_enter_to_send">Type message</string>
     <!-- Hint text in message body field when keyboard is hidden -->
     <string name="open_keyboard_to_compose_message">Open keyboard to type message</string>
+    <!-- Hint text when we are not the default SMS app -->
+    <string name="sending_disabled_not_default_app">Sending disabled</string>
+    <!-- Toast text when user tries to compose while we are not the default SMS app -->
+    <string name="compose_disabled_toast">Can\'t compose. Not default SMS app.</string>
 
     <!-- Toast message while an image is being resized -->
     <string name="compressing">Picture too large. Compressing\u2026</string>
@@ -325,6 +320,15 @@
     <string name="pref_sms_settings_title">"Text (SMS) messages"</string>
     <!-- Settings screen, section heading for storage-specific settings -->
     <string name="pref_sms_storage_title">Storage</string>
+
+    <!-- Title for SMS Disabled -->
+    <string name="pref_title_sms_disabled">SMS Disabled</string>
+    <!-- Summary for SMS Disabled -->
+    <string name="pref_summary_sms_disabled">Touch to make Messaging your default SMS app</string>
+    <!-- Title for SMS Enabled -->
+    <string name="pref_title_sms_enabled">SMS Enabled</string>
+    <!-- Summary for SMS Enabled -->
+    <string name="pref_summary_sms_enabled">Touch to change your default SMS app</string>
 
     <!-- Settings item description for entering SIM card message screen -->
     <string name="pref_summary_manage_sim_messages">Manage messages stored on your SIM card</string>
@@ -604,6 +608,8 @@
     <string name="message_failed_body">Touch to review the message and try again.</string>
     <!-- Dialog box message when there's a problem retrieving messages. -->
     <string name="download_later">Can\'t download right now. Try again later.</string>
+    <!-- Dialog box message when there's no APN specified on the device. -->
+    <string name="no_apn">No APN specified on the device.</string>
 
     <!-- Title for audio file picker -->
     <string name="select_audio">Choose audio</string>
@@ -620,7 +626,6 @@
     <!-- Toast message on failed copying ringtone to drm provider -->
     <string name="saved_ringtone_fail">Couldn\'t save ringtone.</string>
     <!-- Menu item -->
-    <string name="menu_insert_smiley">Insert smiley</string>
     <!-- Menu item  [CHAR LIMIT=40] -->
     <string name="menu_group_participants">Group participants</string>
 
@@ -784,273 +789,16 @@
 
     <!-- In message list items, this string builds the timestamp line when the message is in a group [CHAR LIMIT=NONE] -->
     <string name="message_timestamp_format"><xliff:g id="string" example="Fred Flinstone">%1$s</xliff:g>\u0020-\u0020<xliff:g id="string" example="9:39AM">%2$s</xliff:g></string>
-    <!-- Subscription selection strings -->
-    <string name="select_subscription_title">Select Subscription</string>
-    <string name="subscription1_title">Subscription 1</string>
-    <string name="subscription2_title">Subscription 2</string>
-    <string name="subscription3_title">Subscription 3</string>
 
-    <string name="pending_mms_title">Pending MMS on other subscription.</string>
-    <string name="pending_mms">Messaging: One or more MMS are pending.</string>
-    <string name="pending_mms_text">Touch to switch the subscription.</string>
+    <string name="storage_warning_title">"Your phone's storage is full"</string>
+    <string name="storage_warning_content">"You won't receive new SMS/MMS messages"</string>
+    <!--  Strings used forh MMS push of messages in outbox -->
+    <string name="label_mms_send_outbox_msg">MMS Wakeup</string>
+    <string name="desc_mms_send_outbox_msg">Sends out all MMSs from the outbox to the network</string>
 
-    <string name="abort_mms">Messaging: Abort MMS</string>
-    <string name="abort_mms_text">Touch to abort and switch back.</string>
-
-    <string name="progress_mms_title">MMS transaction on other sub in progress</string>
-    <string name="progress_mms">Messaging: MMS in progress...</string>
-    <string name="progress_mms_text">Touch to retry again</string>
-
-    <!-- Message options - Add SMS to calendar -->
-    <string name="menu_add_to_calendar">Add to calendar</string>
-
-    <!-- QM - Dialog box buttons -->
-    <string name="button_close">Close</string>
-    <string name="button_view">View</string>
-    <string name="button_templates">Templates</string>
-
-    <!-- QM - Hint text in message body field when keyboard is exposed -->
-    <string name="type_to_reply_text_enter_to_send">Type to reply</string>
-
-    <!-- QM - Toast -->
-    <string name="toast_sending_message">Sending message</string>
-
-    <!-- QM - Quick reply -->
-    <string name="qm_quick_reply">Reply</string>
-    <string name="qm_mark_read">Read</string>
-
-    <!-- QM - Counter separator -->
-    <string name="message_counter_separator">of</string>
-
-    <!-- NOTIFICATIONS -->
-    <!-- Privacy mode -->
-    <string name="pref_title_notification_privacy_mode_enabled">Privacy mode</string>
-    <string name="pref_summary_notification_privacy_mode_enabled">Hide sender and message in status bar and disable \'Quick reply\'</string>
-    <string name="notification_single_title_privacy_mode">New message</string>
-    <string name="notification_single_text_privacy_mode">1 unread message</string>
-    <string name="notification_multiple_title_privacy_mode">New messages</string>
-    <string name="notification_multiple_text_privacy_mode"><xliff:g id="number" example="3">%1$s</xliff:g> unread messages</string>
-    <string name="notification_ticker_privacy_mode">New message received</string>
-
-    <!-- Vibrate pattern -->
-    <string name="pref_title_mms_notification_vibrate_pattern">Vibrate pattern</string>
-    <string name="pref_summary_mms_notification_vibrate_pattern">Change vibrate pattern</string>
-    <string name="pref_title_mms_notification_vibrate_custom">Custom vibrate pattern</string>
-    <string name="pref_text_mms_notification_vibrate_custom">Format off/on in milliseconds: off, on, off, on\u2026</string>
-
-    <!-- QUICKMESSAGE -->
-    <string name="pref_quickmessage">Quick reply</string>
-
-    <!-- Use dark theme -->
-    <string name="pref_dark_theme_title">Use dark theme</string>
-    <string name="pref_dark_theme_summary">If not selected, the default \'light\' theme will be used</string>
-
-    <!-- Show pop-up -->
-    <string name="pref_quickmessage_title">Show pop-up</string>
-    <string name="pref_quickmessage_summary">Display the QuickMessage pop-up for incoming SMS messages</string>
-
-    <!-- Wake and unlock -->
-    <string name="pref_wake_unlock_title">Wake and unlock</string>
-    <string name="pref_wake_unlock_summary">Wake and unlock device on incoming message (insecure lock screens only)</string>
-
-    <!-- Close all messages -->
-    <string name="pref_close_all_title">Close all</string>
-    <string name="pref_close_all_summary">Close button closes all messages</string>
-
-    <!-- SMS TEMPLATES -->
-    <string name="prefs_templates_settings">SMS templates</string>
-
-    <!-- Manage SMS templates -->
-    <string name="pref_title_templates_manage">Templates</string>
-    <string name="pref_summary_templates_manage">Manage your SMS templates</string>
-    <string name="template_explanation">Insert or modify the template text and optionally draw a gesture to associate it</string>
-    <string name="template_insert_hint">Insert here the template text</string>
-    <string name="template_empty_text">Text field cannot be empty</string>
-    <string name="template_save">Save</string>
-    <string name="template_ctx_menu_title">Actions</string>
-    <string name="template_edit">Edit</string>
-    <string name="template_delete">Delete</string>
-    <string name="template_list_title">Templates</string>
-    <string name="template_new_title">New template</string>
-    <string name="template_insert">Insert template</string>
-    <string name="template_gesture_draw">Draw the gesture in the space below</string>
-    <string name="template_not_present_error">There are no defined templates</string>
-    <string name="template_not_present_error_title">Error</string>
-    <string name="template_select">Select a template</string>
-    <string name="template_confirm_dialog_title">Delete?</string>
-    <string name="gestures_already_present">A similar gesture is already associated with another template</string>
-    <string name="select_template">Select templates</string>
-
-    <!-- Show gesture trace -->
-    <string name="pref_title_templates_show_gesture">Gesture</string>
-    <string name="pref_summary_templates_show_gesture">Show gesture trace</string>
-
-    <!-- Gesture sensitivity -->
-    <string name="pref_title_template_gestures_sensitivity">Gesture sensitivity</string>
-
-    <!-- EXTRA SETTINGS -->
-    <string name="pref_extra_settings">Extra settings</string>
-
-    <!-- Strip unicode -->
-    <string name="pref_title_unicode_stripping">Strip unicode</string>
-    <string name="pref_unicode_stripping_leave_intact">Leave characters intact</string>
-    <string name="pref_unicode_stripping_non_encodable">Strip non-encodable characters</string>
-    <string name="pref_unicode_stripping_all">Strip all unicode characters</string>
-
-    <!-- Enable emojis -->
-    <string name="pref_title_enable_emojis">Emoji support</string>
-    <string name="pref_summary_enable_emojis">Enable support for unicode emojis, a set of 471 nice emoticons</string>
-    <string name="menu_insert_emoji">Insert emojis</string>
-
-    <!-- Enable quick emojis -->
-    <string name="pref_title_enable_quick_emojis">Quick emoji button</string>
-    <string name="pref_summary_enable_quick_emojis">Display a button next to the text-input area for quick emoji access</string>
-
-    <!-- Enable SoftBank emoji encoding -->
-    <string name="pref_title_enable_softbank_encoding">SoftBank emoji</string>
-    <string name="pref_summary_enable_softbank_encoding">Use SoftBank emoji encoding</string>
-
-    <!-- Full timestamps -->
-    <string name="pref_title_mms_full_timestamp">Full timestamps</string>
-    <string name="pref_summary_mms_full_timestamp">Display both date and time in timestamps</string>
-
-    <!-- Original timestamps -->
-    <string name="pref_title_mms_use_sent_timestamp">Original timestamps</string>
-    <string name="pref_summary_mms_use_sent_timestamp">Display sent date instead of received date in timestamps</string>
-
-    <!-- Soft keyboard type -->
-    <string name="pref_title_input_type">Soft keyboard type</string>
-    <string name="pref_keyboard_emoji">Show the Emoticons key</string>
-    <string name="pref_keyboard_new_line">Show the Enter key</string>
-    <string name="pref_keyboard_unknown">Unknown, please reselect</string>
-
-    <!-- Settings item for boolean option for SMS Split Counter -->
-    <string name="pref_title_sms_split_counter">Split counter</string>
-    <!-- Settings item description for boolean SMS Split 160 characters setting -->
-    <string name="pref_summary_sms_split_counter">Adds counter to message ex. (1/2)</string>
-
-    <!-- Insert contact information -->
-    <string name="menu_insert_contact_info">Insert contact info</string>
-    <string name="cannot_find_contact">Can\'t insert information of the chosen contact</string>
-    <string name="insert_contact_info_positive_button">Insert</string>
-
-    <!-- MMS push permission -->
-    <string name="label_mms_push">MMS Push</string>
-    <string name="desc_mms_push">Pushes MMS from outbox to the network</string>
-
-    <!-- Blacklist preferences -->
-    <string name="blacklist_title">Blacklist</string>
-    <string name="blacklist_summary_disabled">Disabled</string>
-    <string name="blacklist_summary">Incoming messages from phone numbers in the blacklist will be blocked</string>
-
-    <!-- Blacklist notifications -->
-    <string name="blacklist_notification">Blocked a message from %s</string>
-    <string name="blacklist_notification_private_number">Blocked a message from a private number</string>
-    <string name="blacklist_notification_list_private">Private</string>
-    <string name="blacklist_notification_unknown_number">Blocked a message from unknown number %s</string>
-    <string name="blacklist_notification_multiple"><xliff:g id="count">%d</xliff:g> messages were blocked</string>
-    <string name="unblock_number">Unblock</string>
-
-    <!-- Blacklist management -->
-    <string name="add_to_blacklist">Add to blacklist</string>
-    <string name="add_to_blacklist_message">Future messages from %s will be blocked</string>
-
-    <!-- Generic blacklist handling -->
-    <string name="alert_dialog_yes">Yes</string>
-    <string name="alert_dialog_no">No</string>
-
-    <!-- MMS THEME SETTINGS -->
-    <string name="mms_themes">Mms theme settings</string>
-    <string name="themes_summary">Change the way mms looks</string>
-    <string name="themes_conv_list_title">Conversations list view</string>
-    <string name="themes_conv_list_summary">Change conversation list view style, text colors, and more.</string>
-    <string name="themes_msg_list_title">Message list view</string>
-    <string name="themes_msg_list_summary">Change messaging list view style, text colors, and more</string>
-    <string name="themes_widget_title">Widgets theme style</string>
-    <string name="themes_widget_summary">Change widget style dark/light, and set the text colors</string>
-    <string name="background_colors">Background</string>
-    <string name="restore_defaults">Restore default settings</string>
-    <string name="delete_custom_image">Delete background image</string>
-    <string name="custom_image_title">Custom image</string>
-    <string name="custom_image_summary">Set an image for the background</string>
-    <string name="restart_mms_title">Restart Mms</string>
-    <string name="restart_mms_summary">Some settings like custom image require mms to be restarted to take effect therefore we have this nice restart right here **setting widget from dark to light or the other way around you should remove and put the widget back on</string>
-    <!-- Color Picker -->
-    <string name="dialog_color_picker">Color Picker</string>
-    <string name="press_color_to_apply">Press on Color to apply</string>
-    <string name="arrow_right">→</string>
-    <string name="arrow_down">↓</string>
-    <string name="hex">Hex:</string>
-    <string name="hex_hint">#FF000000</string>
-    <string name="ics_color">Holo</string>
-    <!-- Themes preference categorys -->
-    <string name="main_bg">Main background</string>
-    <string name="recv_text_header">Recieved texts</string>
-    <string name="sent_text_header">Sent texts</string>
-    <string name="show_contact_avatar">Show contact avatar</string>
-    <string name="text_conv_layout">Message conversation layout style</string>
-    <string name="contact_font_size_title">Contact font size</string>
-    <string name="font_size_title">Message font size</string>
-    <string name="date_font_size_title">Date font size</string>
-    <string name="conversation_list_unread">Conversations list unread</string>
-    <string name="conversation_list_read">Conversations list read</string>
-    <!-- conv list read/unread -->
-    <string name="unread_bg">Unread background</string>
-    <string name="unread_contact">Unread contact</string>
-    <string name="unread_subject">Unread subject</string>
-    <string name="unread_date">Unread date</string>
-    <string name="unread_count">Unread msg count</string>
-    <string name="unread_smiley">Unread smiley</string>
-    <string name="read_bg">Read background</string>
-    <string name="read_contact">Read contact</string>
-    <string name="read_subject">Read subject</string>
-    <string name="read_date">Read date</string>
-    <string name="read_count">Read msg count</string>
-    <string name="read_smiley">Read smiley</string>
-    <!-- bubbles -->
-    <string name="text_bubble_title">Set bubble style</string>
-    <string name="bubble_fill_parent_title">Bubble fill parent view</string>
-    <string name="bubble">Bubble</string>
-    <string name="bubble_none">No bubble</string>
-    <string name="hc_bubble">Bubble arrow down</string>
-    <string name="circle_bubble">Bubble arrow side</string>
-    <string name="frame_arrow">Frame with arrow</string>
-    <string name="frame_outer_only">Outer Frame</string>
-    <string name="frame">Frame</string>
-    <!-- Contact use -->
-    <string name="show_contact_name">Show contact names</string>
-    <!-- Sent colors -->
-    <string name="sent_textcolor">Sent text</string>
-    <string name="sent_smiley">Sent smiley</string>
-    <string name="sent_datecolor">Sent date</string>
-    <string name="sent_contact_color">Sent contact</string>
-    <string name="sent_text_bg">Sent background</string>
-    <!-- Recv colors -->
-    <string name="recv_textcolor">Received text</string>
-    <string name="recv_smiley">Received smiley</string>
-    <string name="recv_datecolor">Received date</string>
-    <string name="recv_contact_color">Received contact</string>
-    <string name="recv_text_bg">Received background</string>
-    <!-- Conversation layout styles -->
-    <string name="layout_default">Default layout</string>
-    <string name="layout_from_left">Layout from left</string>
-    <string name="layout_from_right">Layout from right</string>
-    <!-- add signature -->
-    <string name="add_signature_title">Text message signature</string>
-    <string name="add_signature_summary">Set a custom signature for your texts</string>
-    <string name="enter_text">enter text</string>
-    <!-- widgets -->
-    <string name="widget_layout_dark">Dark</string>
-    <string name="widget_layout_light">Light</string>
-    <string name="widget_layout">Widget style</string>
-    <string name="widget_read">Read colors</string>
-    <string name="widget_unread">Unread colors</string>
-    <string name="widget_senders_textcolor_read">Read senders text</string>
-    <string name="widget_senders_textcolor_unread">Unread senders text</string>
-    <string name="widget_subject_textcolor_read">Read subject text</string>
-    <string name="widget_subject_textcolor_unread">Unread subject text</string>
-    <string name="widget_date_textcolor_read">Read date text</string>
-    <string name="widget_date_textcolor_unread">Unread date text</string>
+    <!-- Banner in conversation list for making Messaging the default SMS app -->
+    <string name="banner_sms_promo_title_initial">Messaging is not your SMS app</string>
+    <string name="banner_sms_promo_title_application"><xliff:g id="appName">%s</xliff:g> is your SMS app</string>
+    <string name="banner_sms_promo_message">You can change this in Settings</string>
 
 </resources>
-

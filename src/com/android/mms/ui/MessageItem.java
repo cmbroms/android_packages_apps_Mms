@@ -78,7 +78,6 @@ public class MessageItem {
     String mAddress;
     String mContact;
     String mBody; // Body of SMS, first text of MMS.
-    int mSubscription;   // Holds current mms/sms subscription value.
     String mTextContentType; // ContentType of text of MMS.
     Pattern mHighlight; // portion of message to highlight (from search)
 
@@ -109,29 +108,14 @@ public class MessageItem {
     private PduLoadedCallback mPduLoadedCallback;
     private ItemLoadedFuture mItemLoadedFuture;
 
-    boolean mFullTimestamp;
-    boolean mSentTimestamp;
-
-    int mCountDown = 0;
-
-    public int getCountDown() {
-        return mCountDown;
-    }
-
-    public void setCountDown(int countDown) {
-        this.mCountDown = countDown;
-    }
-
     MessageItem(Context context, String type, final Cursor cursor,
-            final ColumnsMap columnsMap, Pattern highlight, boolean fullTimestamp, boolean sentTimestamp) throws MmsException {
+            final ColumnsMap columnsMap, Pattern highlight) throws MmsException {
         mContext = context;
         mMsgId = cursor.getLong(columnsMap.mColumnMsgId);
         mHighlight = highlight;
         mType = type;
         mCursor = cursor;
         mColumnsMap = columnsMap;
-        mFullTimestamp = fullTimestamp;
-        mSentTimestamp = sentTimestamp;
 
         if ("sms".equals(type)) {
             mReadReport = false; // No read reports in sms
@@ -166,15 +150,11 @@ public class MessageItem {
             }
             mBody = cursor.getString(columnsMap.mColumnSmsBody);
 
-            mSubscription = cursor.getInt(columnsMap.mColumnSubId);
             // Unless the message is currently in the progress of being sent, it gets a time stamp.
             if (!isOutgoingMessage()) {
                 // Set "received" or "sent" time stamp
                 long date = cursor.getLong(columnsMap.mColumnSmsDate);
-                if (mSentTimestamp && (mBoxId == Sms.MESSAGE_TYPE_INBOX)) {
-                    date = cursor.getLong(columnsMap.mColumnSmsDateSent);
-                }
-                mTimestamp = MessageUtils.formatTimeStampString(context, date, mFullTimestamp);
+                mTimestamp = MessageUtils.formatTimeStampString(context, date);
             }
 
             mLocked = cursor.getInt(columnsMap.mColumnSmsLocked) != 0;
@@ -185,8 +165,6 @@ public class MessageItem {
             mMessageType = cursor.getInt(columnsMap.mColumnMmsMessageType);
             mErrorType = cursor.getInt(columnsMap.mColumnMmsErrorType);
             String subject = cursor.getString(columnsMap.mColumnMmsSubject);
-            mSubscription = cursor.getInt(columnsMap.mColumnSubId);
-
             if (!TextUtils.isEmpty(subject)) {
                 EncodedStringValue v = new EncodedStringValue(
                         cursor.getInt(columnsMap.mColumnMmsSubjectCharset),
@@ -410,9 +388,9 @@ public class MessageItem {
             if (!isOutgoingMessage()) {
                 if (PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND == mMessageType) {
                     mTimestamp = mContext.getString(R.string.expire_on,
-                            MessageUtils.formatTimeStampString(mContext, timestamp, mFullTimestamp));
+                            MessageUtils.formatTimeStampString(mContext, timestamp));
                 } else {
-                    mTimestamp =  MessageUtils.formatTimeStampString(mContext, timestamp, mFullTimestamp);
+                    mTimestamp =  MessageUtils.formatTimeStampString(mContext, timestamp);
                 }
             }
             if (mPduLoadedCallback != null) {

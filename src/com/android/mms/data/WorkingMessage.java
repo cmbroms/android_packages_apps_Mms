@@ -39,8 +39,6 @@ import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
 import android.provider.Telephony.MmsSms.PendingMessages;
 import android.provider.Telephony.Sms;
-import android.telephony.MSimSmsManager;
-import android.telephony.MSimTelephonyManager;
 import android.telephony.SmsMessage;
 import android.text.TextUtils;
 import android.util.Log;
@@ -48,7 +46,6 @@ import android.util.Pair;
 
 import com.android.common.contacts.DataUsageStatUpdater;
 import com.android.common.userhappiness.UserHappinessSignals;
-import com.android.internal.telephony.MSimConstants;
 import com.android.mms.ContentRestrictionException;
 import com.android.mms.ExceedMessageSizeException;
 import com.android.mms.LogTag;
@@ -161,10 +158,6 @@ public class WorkingMessage {
     };
 
     private static final int MMS_MESSAGE_SIZE_INDEX  = 1;
-    public static int mCurrentConvSub = MSimConstants.SUB1;
-
-    //flag indicate resend sms that the recipient of conversion is more than one.
-    private boolean mResendMultiRecipients;
 
     /**
      * Callback interface for communicating important state changes back to
@@ -253,7 +246,7 @@ public class WorkingMessage {
         return null;
     }
 
-    private void correctAttachmentState() {
+    private void correctAttachmentState(boolean showToast) {
         int slideCount = mSlideshow.size();
 
         // If we get an empty slideshow, tear down all MMS
@@ -273,7 +266,7 @@ public class WorkingMessage {
             }
         }
 
-        updateState(HAS_ATTACHMENT, hasAttachment(), false);
+        updateState(HAS_ATTACHMENT, hasAttachment(), showToast);
     }
 
     private boolean loadFromUri(Uri uri) {
@@ -289,7 +282,7 @@ public class WorkingMessage {
 
         // Make sure all our state is as expected.
         syncTextFromSlideshow();
-        correctAttachmentState();
+        correctAttachmentState(false);
 
         return true;
     }
@@ -373,9 +366,6 @@ public class WorkingMessage {
         return mText;
     }
 
-    public void setWorkingMessageSub(int subscription) {
-        mCurrentConvSub = subscription;
-    }
     /**
      * @return True if the message has any text. A message with just whitespace is not considered
      * to have text.
@@ -468,7 +458,7 @@ public class WorkingMessage {
         if (result == OK) {
             mAttachmentType = type;
         }
-        correctAttachmentState();   // this can remove the slideshow if there are no attachments
+        correctAttachmentState(true);   // this can remove the slideshow if there are no attachments
 
         if (mSlideshow != null && type == IMAGE) {
             // Prime the image's cache; helps A LOT when the image is coming from the network
@@ -504,9 +494,6 @@ public class WorkingMessage {
                 int threshold = MmsConfig.getSmsToMmsTextThreshold();
                 setLengthRequiresMms(threshold > 0 && smsSegmentCount > threshold, false);
             }
-        } else {
-            // Set HAS_ATTACHMENT if we need it.
-            updateState(HAS_ATTACHMENT, hasAttachment(), true);
         }
         return result;
     }
@@ -1321,21 +1308,16 @@ public class WorkingMessage {
                     recipientsInUI + "\" differ from recipients from conv: \"" +
                     semiSepRecipients + "\"";
 
+            // Just interrupt the process of sending message if recipient mismatch
             LogTag.warnPossibleRecipientMismatch(msg, mActivity);
-        }
-
-        // just do a regular send. We're already on a non-ui thread so no need to fire
-        // off another thread to do this work.
-        if (mResendMultiRecipients) {
-            Log.d(TAG, "it is resend sms recipient="+recipientsInUI);
-            sendSmsWorker(msgText, recipientsInUI, threadId);
-            mResendMultiRecipients = false;
-        } else {
+        }else {
+            // just do a regular send. We're already on a non-ui thread so no need to fire
+            // off another thread to do this work.
             sendSmsWorker(msgText, semiSepRecipients, threadId);
-        }
 
-        // Be paranoid and clean any draft SMS up.
-        deleteDraftSmsMessage(threadId);
+            // Be paranoid and clean any draft SMS up.
+            deleteDraftSmsMessage(threadId);
+        }
     }
 
     private void sendSmsWorker(String msgText, String semiSepRecipients, long threadId) {
@@ -1344,11 +1326,7 @@ public class WorkingMessage {
             Log.d(LogTag.TRANSACTION, "sendSmsWorker sending message: recipients=" +
                     semiSepRecipients + ", threadId=" + threadId);
         }
-        MessageSender sender;
-
-        sender = new SmsMessageSender(mActivity, dests, msgText, threadId,
-                        mCurrentConvSub);
-
+        MessageSender sender = new SmsMessageSender(mActivity, dests, msgText, threadId);
         try {
             sender.sendMessage(threadId);
 
@@ -1478,17 +1456,8 @@ public class WorkingMessage {
             mStatusListener.onAttachmentError(error);
             return;
         }
-
-        ContentValues values = new ContentValues(1);
-        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-            values.put(Mms.SUB_ID, mCurrentConvSub);
-        } else {
-           values.put(Mms.SUB_ID, MSimTelephonyManager.getDefault().getPreferredDataSubscription());
-        }
-        SqliteWrapper.update(mActivity, mContentResolver, mmsUri, values, null, null);
-
         MessageSender sender = new MmsMessageSender(mActivity, mmsUri,
-                slideshow.getCurrentMessageSize(), mCurrentConvSub);
+                slideshow.getCurrentMessageSize());
         try {
             if (!sender.sendMessage(threadId)) {
                 // The message was sent through SMS protocol, we should
@@ -1837,14 +1806,6 @@ public class WorkingMessage {
         // to clear those messages as well as ones with a valid thread id.
         final String where = Mms.THREAD_ID +  (threadId > 0 ? " = " + threadId : " IS NULL");
         asyncDelete(Mms.Draft.CONTENT_URI, where, null);
-    }
-
-    public void setResendMultiRecipients(boolean bResendMultiRecipients) {
-        mResendMultiRecipients = bResendMultiRecipients;
-    }
-
-    public boolean getResendMultiRecipients() {
-        return mResendMultiRecipients;
     }
 
     /**

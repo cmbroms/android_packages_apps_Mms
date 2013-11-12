@@ -22,10 +22,17 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.XmlResourceParser;
+import android.preference.PreferenceManager;
+import android.provider.Telephony;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.internal.telephony.TelephonyProperties;
+import com.android.mms.ui.MessageUtils;
+import com.android.mms.ui.MessagingPreferenceActivity;
 
 public class MmsConfig {
     private static final String TAG = "MmsConfig";
@@ -35,6 +42,10 @@ public class MmsConfig {
     private static final String DEFAULT_HTTP_KEY_X_WAP_PROFILE = "x-wap-profile";
     private static final String DEFAULT_USER_AGENT = "Android-Mms/2.0";
 
+    private static final String MMS_APP_PACKAGE = "com.android.mms";
+
+    private static final String SMS_PROMO_DISMISSED_KEY = "sms_promo_dismissed_key";
+
     private static final int MAX_IMAGE_HEIGHT = 480;
     private static final int MAX_IMAGE_WIDTH = 640;
     private static final int MAX_TEXT_LENGTH = 2000;
@@ -43,7 +54,7 @@ public class MmsConfig {
      * Whether to hide MMS functionality from the user (i.e. SMS only).
      */
     private static boolean mTransIdEnabled = false;
-    private static boolean mMmsEnabled = true;                  // default to true
+    private static int mMmsEnabled = 1;                         // default to true
     private static int mMaxMessageSize = 300 * 1024;            // default to 300k max size
     private static String mUserAgent = DEFAULT_USER_AGENT;
     private static String mUaProfTagName = DEFAULT_HTTP_KEY_X_WAP_PROFILE;
@@ -54,8 +65,8 @@ public class MmsConfig {
     private static int mMaxImageHeight = MAX_IMAGE_HEIGHT;      // default value
     private static int mMaxImageWidth = MAX_IMAGE_WIDTH;        // default value
     private static int mRecipientLimit = Integer.MAX_VALUE;     // default value
-    private static int mDefaultSMSMessagesPerThread = 500;      // default value
-    private static int mDefaultMMSMessagesPerThread = 50;       // default value
+    private static int mDefaultSMSMessagesPerThread = 10000;    // default value
+    private static int mDefaultMMSMessagesPerThread = 1000;     // default value
     private static int mMinMessageCountPerThread = 2;           // default value
     private static int mMaxMessageCountPerThread = 5000;        // default value
     private static int mHttpSocketTimeout = 60*1000;            // default to 1 min
@@ -69,12 +80,6 @@ public class MmsConfig {
     // than a single segment (i.e. 140 chars), then the message will turn into and be sent
     // as an mms message. This feature exists for carriers that don't support multi-part sms's.
     private static boolean mEnableMultipartSMS = true;
-    
-    // By default, the radio splits multipart sms, not the application. If the carrier or radio
-    // does not support this, and the recipient gets garbled text, set this to true. If this is
-    // true and mEnableMultipartSMS is false, the mSmsToMmsTextThreshold will be observed,
-    // converting to mms if we reach the required number of segments.
-    private static boolean mEnableSplitSMS = false;
 
     // If mEnableMultipartSMS is true and mSmsToMmsTextThreshold > 1, then multi-part SMS messages
     // will be converted into a single mms message. For example, if the mms_config.xml file
@@ -118,12 +123,39 @@ public class MmsConfig {
         loadMmsSettings(context);
     }
 
+    public static boolean isSmsEnabled(Context context) {
+        String defaultSmsApplication = Telephony.Sms.getDefaultSmsPackage(context);
+
+        if (defaultSmsApplication != null && defaultSmsApplication.equals(MMS_APP_PACKAGE)) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isSmsPromoDismissed(Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getBoolean(SMS_PROMO_DISMISSED_KEY, false);
+    }
+
+    public static void setSmsPromoDismissed(Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(SMS_PROMO_DISMISSED_KEY, true);
+        editor.apply();
+    }
+
+    public static Intent getRequestDefaultSmsAppActivity() {
+        final Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+        intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, MMS_APP_PACKAGE);
+        return intent;
+    }
+
     public static int getSmsToMmsTextThreshold() {
         return mSmsToMmsTextThreshold;
     }
 
     public static boolean getMmsEnabled() {
-        return mMmsEnabled;
+        return mMmsEnabled == 1 ? true : false;
     }
 
     public static int getMaxMessageSize() {
@@ -210,10 +242,6 @@ public class MmsConfig {
         return mEnableMultipartSMS;
     }
 
-    public static boolean getSplitSmsEnabled() {
-        return mEnableSplitSMS;
-    }
-
     public static boolean getSlideDurationEnabled() {
         return mEnableSlideDuration;
     }
@@ -261,7 +289,6 @@ public class MmsConfig {
     public static boolean getGroupMmsEnabled() {
         return mEnableGroupMms;
     }
-
 
     public static final void beginDocument(XmlPullParser parser, String firstElementName) throws XmlPullParserException, IOException
     {
@@ -317,7 +344,7 @@ public class MmsConfig {
                     if ("bool".equals(tag)) {
                         // bool config tags go here
                         if ("enabledMMS".equalsIgnoreCase(value)) {
-                            mMmsEnabled = "true".equalsIgnoreCase(text);
+                            mMmsEnabled = "true".equalsIgnoreCase(text) ? 1 : 0;
                         } else if ("enabledTransID".equalsIgnoreCase(value)) {
                             mTransIdEnabled = "true".equalsIgnoreCase(text);
                         } else if ("enabledNotifyWapMMSC".equalsIgnoreCase(value)) {
@@ -328,8 +355,6 @@ public class MmsConfig {
                             mAllowAttachAudio = "true".equalsIgnoreCase(text);
                         } else if ("enableMultipartSMS".equalsIgnoreCase(value)) {
                             mEnableMultipartSMS = "true".equalsIgnoreCase(text);
-                        } else if ("enableSplitSMS".equalsIgnoreCase(value)) {
-                            mEnableSplitSMS = "true".equalsIgnoreCase(text);
                         } else if ("enableSlideDuration".equalsIgnoreCase(value)) {
                             mEnableSlideDuration = "true".equalsIgnoreCase(text);
                         } else if ("enableMMSReadReports".equalsIgnoreCase(value)) {

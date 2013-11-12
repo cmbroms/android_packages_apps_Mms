@@ -27,14 +27,12 @@ import android.preference.PreferenceManager;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
 import android.provider.Telephony.MmsSms.PendingMessages;
-import android.telephony.MSimTelephonyManager;
 import android.util.Log;
 
 import com.android.mms.LogTag;
-import com.android.mms.ui.MessagingPreferenceActivity;
-import com.android.mms.util.MultiSimUtility;
-import com.android.mms.util.SendingProgressTokenManager;
 import com.android.mms.ui.ComposeMessageActivity;
+import com.android.mms.ui.MessagingPreferenceActivity;
+import com.android.mms.util.SendingProgressTokenManager;
 import com.google.android.mms.InvalidHeaderValueException;
 import com.google.android.mms.MmsException;
 import com.google.android.mms.pdu.EncodedStringValue;
@@ -51,7 +49,6 @@ public class MmsMessageSender implements MessageSender {
     private final Context mContext;
     private final Uri mMessageUri;
     private final long mMessageSize;
-    private int mSubscription;
 
     // Default preference values
     private static final boolean DEFAULT_DELIVERY_REPORT_MODE  = false;
@@ -60,11 +57,11 @@ public class MmsMessageSender implements MessageSender {
     private static final int     DEFAULT_PRIORITY        = PduHeaders.PRIORITY_NORMAL;
     private static final String  DEFAULT_MESSAGE_CLASS   = PduHeaders.MESSAGE_CLASS_PERSONAL_STR;
 
-    public MmsMessageSender(Context context, Uri location, long messageSize, int subscription) {
+    public MmsMessageSender(Context context, Uri location, long messageSize) {
         mContext = context;
         mMessageUri = location;
         mMessageSize = messageSize;
-        mSubscription = subscription;
+
         if (mMessageUri == null) {
             throw new IllegalArgumentException("Null message URI.");
         }
@@ -124,20 +121,7 @@ public class MmsMessageSender implements MessageSender {
 
         // Start MMS transaction service
         SendingProgressTokenManager.put(messageId, token);
-        Intent intent = new Intent(mContext, TransactionService.class);
-        intent.putExtra(Mms.SUB_ID, mSubscription); //destination sub id
-        intent.putExtra(MultiSimUtility.ORIGIN_SUB_ID,
-                MultiSimUtility.getCurrentDataSubscription(mContext));
-        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-
-            Intent silentIntent = new Intent(mContext,
-                    com.android.mms.ui.SelectMmsSubscription.class);
-            silentIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            silentIntent.putExtras(intent); //copy all extras
-            mContext.startService(silentIntent);
-        } else {
-            mContext.startService(intent);
-        }
+        mContext.startService(new Intent(mContext, TransactionService.class));
 
         return true;
     }

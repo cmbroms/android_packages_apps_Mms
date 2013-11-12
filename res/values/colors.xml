@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2007-2008 Esmertec AG
-     Copyright (C) 2007-2008 The Android Open Source Project
-
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
-
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
+<!--
+/*
+ * Copyright (C) 2007-2008 Esmertec AG.
+ * Copyright (C) 2007-2008 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 -->
-
-<resources xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <!-- Activity background color -->
     <drawable name="class_zero_background">#7f000000</drawable>
 
@@ -38,8 +39,21 @@
     <color name="widget_subject_text_color_read">#ffbfbfbf</color>
     <color name="widget_subject_text_color_unread">#ffcfcfcf</color>
 
+    <color name="translucent_white">#ccffffff</color>
+
     <!-- Color of the text for buttons in the action bar  -->
     <color name="action_bar_button_text_color">#ffefefef</color>
+
+    <color name="banner_item_transparent">#00000000</color>
+    <color name="banner_item_activated">#670099cc</color>
+    <color name="banner_item_selected">#cc0099cc</color>
+    <color name="banner_item_pressed">#6733b5e5</color>
+
+    <color name="text_shadow_color_light">#33000000</color>
+    <color name="solid_white">#ffffffff</color>
+
+    <color name="text_shadow_color">#33ffffff</color>
+    <color name="solid_black">#000000</color>
 
     <!-- New text colors from layouts to make theme chooser apk easier to theme -->
     <color name="compose_message_edit_text">#ffffffff</color>
@@ -62,17 +76,6 @@
     <color name="darkgray_backgrounds">#8f2f2f2f</color>
     <color name="dividers">#ff202020</color>
     <color name="transparent">#00000000</color>
-
-    <!-- Quick messaging colors -->
-    <color name="qm_light_bg">#ffeeeeee</color>
-    <color name="qm_light_text">#ff101010</color>
-    <color name="qm_light_text_fade">#ff404040</color>
-    <color name="qm_holo_blue_light">#ff33b5e5</color>
-    <color name="qm_dark_bg">#ff020202</color>
-    <color name="qm_dark_text">#ffefefef</color>
-    <color name="qm_dark_text_fade">#ffafafaf</color>
-    <color name="quickmessage_body_dark_bg">#ff010101</color>
-    <color name="quickmessage_body_light_bg">#fff3f3f3</color>
 
     <!-- widget background colors for unread/read -->
     <color name="widget_unread_bgcolor">#8f2f2f2f</color>

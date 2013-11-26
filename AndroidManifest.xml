@@ -70,7 +70,7 @@
         <activity android:name=".ui.ConversationList"
                   android:label="@string/app_label"
                   android:configChanges="orientation|screenSize|keyboardHidden"
-                  android:theme="@android:style/Theme.Holo.Light.DarkActionBar"
+                  android:theme="@style/MmsHoloTheme"
                   android:uiOptions="splitActionBarWhenNarrow"
                   android:launchMode="singleTop">
             <intent-filter>

@@ -56,7 +56,7 @@
     <color name="solid_black">#000000</color>
 
     <!-- Color of the background of the action bar -->
-    <color name="action_bar_background">#222222</color>
+    <color name="action_bar_background">#524c4c</color>
 
     <!-- Color of the background of the action bar when highlighted (ie. pressed, focused) -->
     <color name="action_bar_background_highlight">#ff33b5e5</color>
@@ -80,7 +80,6 @@
     <!-- New Background colors from layouts to make theme chooser apk easier to theme -->
     <color name="background">#ff000000</color>
     <color name="darkgray_backgrounds">#8f2f2f2f</color>
-    <color name="ab_background">#222222</color>
 
     <color name="quickmessage_body_dark_bg">#ff1e1e1e</color>
     <color name="quickmessage_body_light_bg">#fff3f3f3</color>

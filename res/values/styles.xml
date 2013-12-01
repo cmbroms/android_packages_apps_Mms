@@ -31,7 +31,6 @@
         <item name="android:actionBarTabStyle">@style/MmsActionBarTabView</item>
         <item name="android:actionOverflowButtonStyle">@style/MmsActionBarOverflow</item>
         <item name="android:homeAsUpIndicator">@drawable/ic_homeback_smsmms</item>
-        <item name="android:background">#000000</item>
     </style>
 
     <style name="MmsActionBarOverflow" parent="@android:style/Widget.Holo.ActionButton.Overflow">

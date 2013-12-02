@@ -56,7 +56,7 @@
     <color name="solid_black">#000000</color>
 
     <!-- Color of the background of the action bar -->
-    <color name="action_bar_background">#524c4c</color>
+    <color name="action_bar_background">#ff222222</color>
 
     <!-- Color of the background of the action bar when highlighted (ie. pressed, focused) -->
     <color name="action_bar_background_highlight">#ff33b5e5</color>

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-     Copyright (C) 2013-2014 The CyanogenMod Project
+<!-- Copyright (C) 2013 The CyanogenMod Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -45,6 +44,12 @@
     <string name="notification_multiple_title_privacy_mode">New messages</string>
     <string name="notification_multiple_text_privacy_mode"><xliff:g id="number" example="3">%1$s</xliff:g> unread messages</string>
     <string name="notification_ticker_privacy_mode">New message received</string>
+
+    <!-- Vibrate pattern -->
+    <string name="pref_title_mms_notification_vibrate_pattern">Vibrate pattern</string>
+    <string name="pref_summary_mms_notification_vibrate_pattern">Change vibrate pattern</string>
+    <string name="pref_title_mms_notification_vibrate_custom">Custom vibrate pattern</string>
+    <string name="pref_text_mms_notification_vibrate_custom">Format off/on in milliseconds: off, on, off, on\u2026</string>
 
     <!-- QUICKMESSAGE -->
     <string name="pref_quickmessage">Quick reply</string>
@@ -105,6 +110,19 @@
     <string name="pref_unicode_stripping_non_encodable">Strip non-encodable characters</string>
     <string name="pref_unicode_stripping_all">Strip all unicode characters</string>
 
+    <!-- Enable emojis -->
+    <string name="pref_title_enable_emojis">Emoji support</string>
+    <string name="pref_summary_enable_emojis">Enable support for unicode emojis, a set of 471 nice emoticons</string>
+    <string name="menu_insert_emoji">Insert emojis</string>
+
+    <!-- Enable quick emojis -->
+    <string name="pref_title_enable_quick_emojis">Quick emoji button</string>
+    <string name="pref_summary_enable_quick_emojis">Display a button next to the text-input area for quick emoji access</string>
+
+    <!-- Enable SoftBank emoji encoding -->
+    <string name="pref_title_enable_softbank_encoding">SoftBank emoji</string>
+    <string name="pref_summary_enable_softbank_encoding">Use SoftBank emoji encoding</string>
+
     <!-- Full timestamps -->
     <string name="pref_title_mms_full_timestamp">Full timestamps</string>
     <string name="pref_summary_mms_full_timestamp">Display both date and time in timestamps</string>
@@ -124,10 +142,27 @@
     <!-- Settings item description for boolean SMS Split 160 characters setting -->
     <string name="pref_summary_sms_split_counter">Adds counter to message ex. (1/2)</string>
 
+    <!-- Insert contact information -->
+    <string name="menu_insert_contact_info">Insert contact info</string>
+    <string name="cannot_find_contact">Can\'t insert information of the chosen contact</string>
+    <string name="insert_contact_info_positive_button">Insert</string>
+
+    <!-- MMS push permission -->
+    <string name="label_mms_push">MMS Push</string>
+    <string name="desc_mms_push">Pushes MMS from outbox to the network</string>
+
     <!-- Blacklist preferences -->
     <string name="blacklist_title">Blacklist</string>
     <string name="blacklist_summary_disabled">Disabled</string>
     <string name="blacklist_summary">Incoming messages from phone numbers in the blacklist will be blocked</string>
+
+    <!-- Blacklist notifications -->
+    <string name="blacklist_notification">Blocked a message from %s</string>
+    <string name="blacklist_notification_private_number">Blocked a message from a private number</string>
+    <string name="blacklist_notification_list_private">Private</string>
+    <string name="blacklist_notification_unknown_number">Blocked a message from unknown number %s</string>
+    <string name="blacklist_notification_multiple"><xliff:g id="count">%d</xliff:g> messages were blocked</string>
+    <string name="unblock_number">Unblock</string>
 
     <!-- Blacklist management -->
     <string name="add_to_blacklist">Add to blacklist</string>
@@ -137,6 +172,12 @@
     <string name="alert_dialog_yes">Yes</string>
     <string name="alert_dialog_no">No</string>
 
+    <!-- Toast when storage is full -->
+    <string name="storage_is_full">The messaging database is full. Please delete some conversations.</string>
+
+    <!-- Context menu item on an failed message for resending -->
+    <string name="menu_resend">Resend</string>
+
     <!-- Multi recipients -->
     <string name="select_recipients">Select recipients</string>
     <string name="groups_header">Groups</string>
@@ -145,8 +186,7 @@
     <string name="menu_done">Done</string>
     <string name="menu_mobile">Mobile numbers only</string>
     <string name="menu_groups">Show groups</string>
-    <!-- Abbreviation of "Group" - CHAR LIMIT=3 -->
-    <string name="fastscroll_index_groups">GR</string>
+    <string name="fastscroll_index_groups">GR</string> <!-- CHAR LIMIT=3 -->
 
     <!-- Delay delivery -->
     <string name="pref_title_send_delay">Delivery delay</string>
@@ -157,14 +197,5 @@
     <string name="send_delay_20seconds">20 seconds</string>
     <string name="send_delay_30seconds">30 seconds</string>
     <string name="sent_countdown">Message delivery countdown</string>
-
-    <!-- Vibrate pattern -->
-    <string name="pref_title_mms_notification_vibrate_pattern">Vibrate pattern</string>
-    <string name="pref_summary_mms_notification_vibrate_pattern">Change vibrate pattern</string>
-    <string name="pref_mms_notification_vibrate_normal">Normal</string>
-    <string name="pref_mms_notification_vibrate_med_vib">Medium vibrate</string>
-    <string name="pref_mms_notification_vibrate_long_vib">Long vibrate</string>
-    <string name="pref_mms_notification_vibrate_mult_short">Multiple short</string>
-    <string name="pref_mms_notification_vibrate_mult_long">Multiple long</string>
 
 </resources>

@@ -95,6 +95,7 @@ public class NotificationTransaction extends Transaction implements Runnable {
 
         mContentLocation = new String(mNotificationInd.getContentLocation());
         mId = mContentLocation;
+        Log.d(TAG, "mId=" + mId);
 
         // Attach the transaction to the instance of RetryScheduler.
         attach(RetryScheduler.getInstance(context));
@@ -121,6 +122,7 @@ public class NotificationTransaction extends Transaction implements Runnable {
 
         mNotificationInd = ind;
         mId = new String(mNotificationInd.getContentLocation());
+        Log.d(TAG, "mId=" + mId);
     }
 
     /*
@@ -188,10 +190,8 @@ public class NotificationTransaction extends Transaction implements Runnable {
                             MessagingPreferenceActivity.getIsGroupMmsEnabled(mContext), null);
 
                     // Use local time instead of PDU time
-                    ContentValues values = new ContentValues(3);
+                    ContentValues values = new ContentValues(2);
                     values.put(Mms.DATE, System.currentTimeMillis() / 1000L);
-                    // Update Message Size for Original MMS.
-                    values.put(Mms.MESSAGE_SIZE, mNotificationInd.getMessageSize());
                     Cursor c = mContext.getContentResolver().query(mUri,
                             null, null, null, null);
                     if (c != null) {

@@ -163,6 +163,9 @@ public class WorkingMessage {
     private static final int MMS_MESSAGE_SIZE_INDEX  = 1;
     public static int mCurrentConvSub = MSimConstants.SUB1;
 
+    //flag indicate resend sms that the recipient of conversion is more than one.
+    private boolean mResendMultiRecipients;
+
     /**
      * Callback interface for communicating important state changes back to
      * ComposeMessageActivity.
@@ -250,7 +253,7 @@ public class WorkingMessage {
         return null;
     }
 
-    private void correctAttachmentState(boolean showToast) {
+    private void correctAttachmentState() {
         int slideCount = mSlideshow.size();
 
         // If we get an empty slideshow, tear down all MMS
@@ -270,7 +273,7 @@ public class WorkingMessage {
             }
         }
 
-        updateState(HAS_ATTACHMENT, hasAttachment(), showToast);
+        updateState(HAS_ATTACHMENT, hasAttachment(), false);
     }
 
     private boolean loadFromUri(Uri uri) {
@@ -286,7 +289,7 @@ public class WorkingMessage {
 
         // Make sure all our state is as expected.
         syncTextFromSlideshow();
-        correctAttachmentState(false);
+        correctAttachmentState();
 
         return true;
     }
@@ -465,7 +468,7 @@ public class WorkingMessage {
         if (result == OK) {
             mAttachmentType = type;
         }
-        correctAttachmentState(true);   // this can remove the slideshow if there are no attachments
+        correctAttachmentState();   // this can remove the slideshow if there are no attachments
 
         if (mSlideshow != null && type == IMAGE) {
             // Prime the image's cache; helps A LOT when the image is coming from the network
@@ -501,6 +504,9 @@ public class WorkingMessage {
                 int threshold = MmsConfig.getSmsToMmsTextThreshold();
                 setLengthRequiresMms(threshold > 0 && smsSegmentCount > threshold, false);
             }
+        } else {
+            // Set HAS_ATTACHMENT if we need it.
+            updateState(HAS_ATTACHMENT, hasAttachment(), true);
         }
         return result;
     }
@@ -1315,16 +1321,21 @@ public class WorkingMessage {
                     recipientsInUI + "\" differ from recipients from conv: \"" +
                     semiSepRecipients + "\"";
 
-            // Just interrupt the process of sending message if recipient mismatch
             LogTag.warnPossibleRecipientMismatch(msg, mActivity);
-        }else {
-            // just do a regular send. We're already on a non-ui thread so no need to fire
-            // off another thread to do this work.
-            sendSmsWorker(msgText, semiSepRecipients, threadId);
-
-            // Be paranoid and clean any draft SMS up.
-            deleteDraftSmsMessage(threadId);
         }
+
+        // just do a regular send. We're already on a non-ui thread so no need to fire
+        // off another thread to do this work.
+        if (mResendMultiRecipients) {
+            Log.d(TAG, "it is resend sms recipient="+recipientsInUI);
+            sendSmsWorker(msgText, recipientsInUI, threadId);
+            mResendMultiRecipients = false;
+        } else {
+            sendSmsWorker(msgText, semiSepRecipients, threadId);
+        }
+
+        // Be paranoid and clean any draft SMS up.
+        deleteDraftSmsMessage(threadId);
     }
 
     private void sendSmsWorker(String msgText, String semiSepRecipients, long threadId) {
@@ -1356,17 +1367,6 @@ public class WorkingMessage {
         long threadId = 0;
         Cursor cursor = null;
         boolean newMessage = false;
-        boolean forwardMessage = conv.getHasMmsForward();
-        boolean sameRecipient = false;
-        ContactList contactList = conv.getRecipients();
-        if (contactList != null) {
-            String[] numbers = contactList.getNumbers();
-            if (numbers != null && numbers.length == 1) {
-                if (numbers[0].equals(conv.getForwardRecipientNumber())) {
-                    sameRecipient = true;
-                }
-            }
-        }
         try {
             // Put a placeholder message in the database first
             DraftCache.getInstance().setSavingDraft(true);
@@ -1375,9 +1375,6 @@ public class WorkingMessage {
             // Make sure we are still using the correct thread ID for our
             // recipient set.
             threadId = conv.ensureThreadId();
-            if (forwardMessage && sameRecipient) {
-                MessageUtils.sSameRecipientList.add(threadId);
-            }
 
             if (Log.isLoggable(LogTag.APP, Log.VERBOSE)) {
                 LogTag.debug("sendMmsWorker: update draft MMS message " + mmsUri +
@@ -1503,9 +1500,6 @@ public class WorkingMessage {
             Recycler.getMmsRecycler().deleteOldMessagesByThreadId(mActivity, threadId);
         } catch (Exception e) {
             Log.e(TAG, "Failed to send message: " + mmsUri + ", threadId=" + threadId, e);
-        }
-        if (forwardMessage && sameRecipient) {
-            MessageUtils.sSameRecipientList.remove(threadId);
         }
         MmsWidgetProvider.notifyDatasetChanged(mActivity);
     }
@@ -1843,6 +1837,14 @@ public class WorkingMessage {
         // to clear those messages as well as ones with a valid thread id.
         final String where = Mms.THREAD_ID +  (threadId > 0 ? " = " + threadId : " IS NULL");
         asyncDelete(Mms.Draft.CONTENT_URI, where, null);
+    }
+
+    public void setResendMultiRecipients(boolean bResendMultiRecipients) {
+        mResendMultiRecipients = bResendMultiRecipients;
+    }
+
+    public boolean getResendMultiRecipients() {
+        return mResendMultiRecipients;
     }
 
     /**

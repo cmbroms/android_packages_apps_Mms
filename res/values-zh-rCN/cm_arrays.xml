@@ -34,5 +34,6 @@
         <item>长期震动</item>
         <item>多次震动 (短促)</item>
         <item>多次震动 (长期)</item>
+        <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
 </resources>

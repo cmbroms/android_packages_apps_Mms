@@ -57,20 +57,18 @@ public class ImageCacheService {
     public ImageData getImageData(String path, int type) {
         byte[] key = makeKey(path, type);
         long cacheKey = crc64Long(key);
-        if (mCache != null) {
-            try {
-                byte[] value = null;
-                synchronized (mCache) {
-                    value = mCache.lookup(cacheKey);
-                }
-                if (value == null) return null;
-                if (isSameKey(key, value)) {
-                    int offset = key.length;
-                    return new ImageData(value, offset);
-                }
-            } catch (IOException ex) {
-                // ignore.
+        try {
+            byte[] value = null;
+            synchronized (mCache) {
+                value = mCache.lookup(cacheKey);
             }
+            if (value == null) return null;
+            if (isSameKey(key, value)) {
+                int offset = key.length;
+                return new ImageData(value, offset);
+            }
+        } catch (IOException ex) {
+            // ignore.
         }
         return null;
     }
@@ -81,13 +79,11 @@ public class ImageCacheService {
         ByteBuffer buffer = ByteBuffer.allocate(key.length + value.length);
         buffer.put(key);
         buffer.put(value);
-        if (mCache != null) {
-            synchronized (mCache) {
-                try {
-                    mCache.insert(cacheKey, buffer.array());
-                } catch (IOException ex) {
-                    // ignore.
-                }
+        synchronized (mCache) {
+            try {
+                mCache.insert(cacheKey, buffer.array());
+            } catch (IOException ex) {
+                // ignore.
             }
         }
     }

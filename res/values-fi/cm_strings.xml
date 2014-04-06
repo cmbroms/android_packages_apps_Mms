@@ -30,6 +30,10 @@
     <string name="notification_multiple_title_privacy_mode">Uusia viestejä</string>
     <string name="notification_multiple_text_privacy_mode"><xliff:g id="number" example="3">%1$s</xliff:g> lukematonta viestiä</string>
     <string name="notification_ticker_privacy_mode">Uusi viesti vastaanotettu</string>
+    <string name="pref_title_mms_notification_vibrate_pattern">Värinän kaava</string>
+    <string name="pref_summary_mms_notification_vibrate_pattern">Muuta värinän kaavaa</string>
+    <string name="pref_title_mms_notification_vibrate_custom">Kustomoitu</string>
+    <string name="pref_text_mms_notification_vibrate_custom">Muotoile päälle/pois millisekunneissa: päälle, pois, päälle, pois...</string>
     <string name="pref_quickmessage">Pikavastaus</string>
     <string name="pref_dark_theme_title">Käytä tummaa teemaa</string>
     <string name="pref_dark_theme_summary">Jos ei valittuna, alkuperäinen \'vaalea\' teema on käytössä</string>
@@ -67,6 +71,13 @@
     <string name="pref_unicode_stripping_leave_intact">Älä tee mitään</string>
     <string name="pref_unicode_stripping_non_encodable">Poista koodaamattomat merkit</string>
     <string name="pref_unicode_stripping_all">Poista kaikki unicode-merkitStrip all unicode characters</string>
+    <string name="pref_title_enable_emojis">Emoji-tuki</string>
+    <string name="pref_summary_enable_emojis">Ota 471 unicode-hymiötä käyttöön</string>
+    <string name="menu_insert_emoji">Aseta emoji</string>
+    <string name="pref_title_enable_quick_emojis">Pika-emojinäppäin</string>
+    <string name="pref_summary_enable_quick_emojis">Näyttää emoji-näppäimen viestikentän vieressä</string>
+    <string name="pref_title_enable_softbank_encoding">SoftBank emoji</string>
+    <string name="pref_summary_enable_softbank_encoding">Käytä SoftBank emoji-koodausta</string>
     <string name="pref_title_mms_full_timestamp">Näytä aikaleimat</string>
     <string name="pref_summary_mms_full_timestamp">Näytä aika ja päivämäärä aikaleimassa</string>
     <string name="pref_title_mms_use_sent_timestamp">Alkuperäinen aikaleima</string>
@@ -77,9 +88,20 @@
     <string name="pref_keyboard_unknown">Tuntematon, valitse uudestaan</string>
     <string name="pref_title_sms_split_counter">Viestin jakolaskuri</string>
     <string name="pref_summary_sms_split_counter">Lisää laskurin viesteihin, esim. (1/2)</string>
+    <string name="menu_insert_contact_info">Lisää yhteystietoon</string>
+    <string name="cannot_find_contact">Ei voida lisätä tietoja valittuun yhteystietoon</string>
+    <string name="insert_contact_info_positive_button">Lisää</string>
+    <string name="label_mms_push">MMS Push</string>
+    <string name="desc_mms_push">Lähettää MMS-viestin lähtevistä viesteistä verkkoon</string>
     <string name="blacklist_title">Musta lista</string>
     <string name="blacklist_summary_disabled">Pois käytöstä</string>
     <string name="blacklist_summary">Tulevat viestit mustalla listalla olevista puhelinnumeroista estetään</string>
+    <string name="blacklist_notification">Viesti numerosta %s estettiin</string>
+    <string name="blacklist_notification_private_number">Viesti salaisesta numerosta estettiin</string>
+    <string name="blacklist_notification_list_private">Salainen</string>
+    <string name="blacklist_notification_unknown_number">Viesti tuntemattomasta (ei yhteystiedoissa) numerosta %s estettiin</string>
+    <string name="blacklist_notification_multiple"><xliff:g id="count">%d</xliff:g> viestiä estettiin</string>
+    <string name="unblock_number">Poista esto</string>
     <string name="add_to_blacklist">Lisää mustalle listalle</string>
     <string name="add_to_blacklist_message">Uudet viestit numerosta %s estetään</string>
     <string name="alert_dialog_yes">Kyllä</string>

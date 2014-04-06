@@ -34,5 +34,6 @@
          <item>"Vibraţii Lungi"</item>
          <item>"Multiple Scurte"</item>
          <item>"Multiple Lungi"</item>
+         <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
 </resources>

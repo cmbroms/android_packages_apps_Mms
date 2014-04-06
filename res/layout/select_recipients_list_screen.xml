@@ -41,7 +41,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:drawSelectorOnTop="false"
-        android:scrollbarStyle="outsideOverlay"
+        android:scrollbarStyle="insideOverlay"
         android:background="@color/background"
         android:cacheColorHint="@color/background"
         android:fadingEdgeLength="16dip"

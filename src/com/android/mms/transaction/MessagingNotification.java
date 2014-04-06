@@ -1,9 +1,8 @@
 /*
- * Copyright (C) 2010-2013, The Linux Foundation. All rights reserved.
- * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
- * QuickMessage Copyright (C) 2012 The CyanogenMod Project (DvTonder)
+ * Copyright (C) 2010-2013, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,9 +55,9 @@ import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Sms;
+import android.telephony.TelephonyManager;
 import android.telephony.MSimSmsManager;
 import android.telephony.MSimTelephonyManager;
-import android.telephony.TelephonyManager;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -69,6 +68,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.android.mms.LogTag;
+import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.data.Contact;
 import com.android.mms.data.Conversation;
@@ -376,7 +376,6 @@ public class MessagingNotification {
         public final int mAttachmentType;
         public final String mSubject;
         public final long mThreadId;
-        public final int mSubId;
 
         /**
          * @param isSms true if sms, false if mms
@@ -391,13 +390,12 @@ public class MessagingNotification {
          * @param sender contact of the sender
          * @param attachmentType of the mms attachment
          * @param threadId thread this message belongs to
-         * @param subId subscription used for this message
          */
         public NotificationInfo(boolean isSms,
                 Intent clickIntent, String message, String subject,
                 CharSequence ticker, long timeMillis, String title,
                 Bitmap attachmentBitmap, Contact sender,
-                int attachmentType, long threadId, int subId) {
+                int attachmentType, long threadId) {
             mIsSms = isSms;
             mClickIntent = clickIntent;
             mMessage = message;
@@ -409,7 +407,6 @@ public class MessagingNotification {
             mSender = sender;
             mAttachmentType = attachmentType;
             mThreadId = threadId;
-            mSubId = subId;
         }
 
         public long getTime() {
@@ -532,7 +529,6 @@ public class MessagingNotification {
             arg0.writeParcelable(mAttachmentBitmap, 0);
             arg0.writeInt(mAttachmentType);
             arg0.writeLong(mThreadId);
-            arg0.writeInt(mSubId);
         }
 
         public NotificationInfo(Parcel in) {
@@ -547,7 +543,6 @@ public class MessagingNotification {
             mSender = null;
             mAttachmentType = in.readInt();
             mThreadId = in.readLong();
-            mSubId = in.readInt();
         }
 
         public static final Parcelable.Creator<NotificationInfo> CREATOR = new Parcelable.Creator<NotificationInfo>() {
@@ -820,6 +815,9 @@ public class MessagingNotification {
             Bitmap attachmentBitmap,
             Contact contact,
             int attachmentType) {
+        if (AddressUtils.isSuppressedSprintVVM(context, address)) {
+            return null;
+        }
         Intent clickIntent = ComposeMessageActivity.createIntent(context, threadId);
         clickIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -834,7 +832,7 @@ public class MessagingNotification {
 
         return new NotificationInfo(isSms,
                 clickIntent, message, subject, ticker, timeMillis,
-                senderInfoName, attachmentBitmap, contact, attachmentType, threadId, subId);
+                senderInfoName, attachmentBitmap, contact, attachmentType, threadId);
     }
 
     public static void cancelNotification(Context context, int notificationId) {
@@ -903,6 +901,7 @@ public class MessagingNotification {
                 noti.setTicker(context.getString(R.string.notification_ticker_privacy_mode));
             }
         }
+        TaskStackBuilder taskStackBuilder = TaskStackBuilder.create(context);
 
         // If we have more than one unique thread, change the title (which would
         // normally be the contact who sent the message) to a generic one that
@@ -918,7 +917,6 @@ public class MessagingNotification {
         String title = null;
         String privateModeContentText = null;
         Bitmap avatar = null;
-        PendingIntent pendingIntent = null;
         if (uniqueThreadCount > 1) {    // messages from multiple threads
             Intent mainActivityIntent = new Intent(Intent.ACTION_MAIN);
 
@@ -927,8 +925,7 @@ public class MessagingNotification {
                     | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
             mainActivityIntent.setType("vnd.android-dir/mms-sms");
-            pendingIntent = PendingIntent.getActivity(context, 0,
-                    mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            taskStackBuilder.addNextIntent(mainActivityIntent);
             if (!privacyMode) {
                 title = context.getString(R.string.message_count_notification, messageCount);
             } else {
@@ -969,9 +966,8 @@ public class MessagingNotification {
                 }
             }
 
-            pendingIntent = PendingIntent.getActivity(context, 0,
-                    mostRecentNotification.mClickIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT);
+            taskStackBuilder.addParentStack(ComposeMessageActivity.class);
+            taskStackBuilder.addNextIntent(mostRecentNotification.mClickIntent);
         }
         // Always have to set the small icon or the notification is ignored
         noti.setSmallIcon(R.drawable.stat_notify_sms);
@@ -981,7 +977,8 @@ public class MessagingNotification {
 
         // Update the notification.
         noti.setContentTitle(title)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(
+                    taskStackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT))
             .addKind(Notification.KIND_MESSAGE)
             .setPriority(Notification.PRIORITY_DEFAULT);     // TODO: set based on contact coming
                                                              // from a favorite.
@@ -990,12 +987,12 @@ public class MessagingNotification {
 
         if (isNew) {
             boolean vibrate = false;
+
             if (sp.contains(MessagingPreferenceActivity.NOTIFICATION_VIBRATE)) {
                 // The most recent change to the vibrate preference is to store a boolean
                 // value in NOTIFICATION_VIBRATE. If prefs contain that preference, use that
                 // first.
-                vibrate = sp.getBoolean(MessagingPreferenceActivity.NOTIFICATION_VIBRATE,
-                        false);
+                vibrate = sp.getBoolean(MessagingPreferenceActivity.NOTIFICATION_VIBRATE, false);
             } else if (sp.contains(MessagingPreferenceActivity.NOTIFICATION_VIBRATE_WHEN)) {
                 // This is to support the pre-JellyBean MR1.1 version of vibrate preferences
                 // when vibrate was a tri-state setting. As soon as the user opens the Messaging
@@ -1005,9 +1002,14 @@ public class MessagingNotification {
                         sp.getString(MessagingPreferenceActivity.NOTIFICATION_VIBRATE_WHEN, null);
                 vibrate = "always".equals(vibrateWhen);
             }
+
             if (vibrate) {
                 String pattern = sp.getString(
                         MessagingPreferenceActivity.NOTIFICATION_VIBRATE_PATTERN, "0,1200");
+                if ("custom".equals(pattern)) {
+                    pattern = sp.getString(
+                            MessagingPreferenceActivity.NOTIFICATION_VIBRATE_PATTERN_CUSTOM, "0,1200");
+                }
 
                 if (!TextUtils.isEmpty(pattern)) {
                     noti.setVibrate(parseVibratePattern(pattern));
@@ -1551,18 +1553,34 @@ public class MessagingNotification {
     }
 
     // Parse the user provided custom vibrate pattern into a long[]
-    private static long[] parseVibratePattern(String pattern) {
-        String[] splitPattern = pattern.split(",");
-        long[] result = new long[splitPattern.length];
+    public static long[] parseVibratePattern(String stringPattern) {
+        ArrayList<Long> arrayListPattern = new ArrayList<Long>();
+        Long l;
+        String[] splitPattern = stringPattern.split(",");
+        int VIBRATE_PATTERN_MAX_SECONDS = 60000;
+        int VIBRATE_PATTERN_MAX_PATTERN = 100;
 
         for (int i = 0; i < splitPattern.length; i++) {
             try {
-                result[i] = Long.parseLong(splitPattern[i]);
+                l = Long.parseLong(splitPattern[i].trim());
             } catch (NumberFormatException e) {
                 return null;
             }
+            if (l > VIBRATE_PATTERN_MAX_SECONDS) {
+                return null;
+            }
+            arrayListPattern.add(l);
         }
 
-        return result;
+        int size = arrayListPattern.size();
+        if (size > 0 && size < VIBRATE_PATTERN_MAX_PATTERN) {
+            long[] pattern = new long[size];
+            for (int i = 0; i < pattern.length; i++) {
+                pattern[i] = arrayListPattern.get(i);
+            }
+            return pattern;
+        }
+
+        return null;
     }
 }

@@ -16,9 +16,6 @@
 
 package com.android.mms.quickmessage;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -45,6 +42,9 @@ import android.support.v4.view.ViewPager;
 import android.text.InputFilter;
 import android.text.InputFilter.LengthFilter;
 import android.text.InputType;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -59,18 +59,24 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.Button;
 import android.widget.CursorAdapter;
 import android.widget.EditText;
+import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.QuickContactBadge;
+import android.widget.SimpleAdapter;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 
+import com.android.internal.telephony.MSimConstants;
 import com.android.internal.telephony.util.BlacklistUtils;
 import com.android.mms.MmsConfig;
 import com.android.mms.R;
@@ -80,13 +86,23 @@ import com.android.mms.templates.TemplatesProvider.Template;
 import com.android.mms.transaction.MessagingNotification;
 import com.android.mms.transaction.MessagingNotification.NotificationInfo;
 import com.android.mms.transaction.SmsMessageSender;
+import com.android.mms.ui.ImageAdapter;
 import com.android.mms.ui.MessageUtils;
 import com.android.mms.ui.MessagingPreferenceActivity;
+import com.android.mms.util.EmojiParser;
+import com.android.mms.util.SmileyParser;
 import com.android.mms.util.UnicodeFilter;
 import com.google.android.mms.MmsException;
-//import com.android.mms.ui.ImageAdapter;
-//import com.android.mms.util.EmojiParser;
-//import com.android.mms.util.SmileyParser;
+
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class QuickMessagePopup extends Activity implements
     LoaderManager.LoaderCallbacks<Cursor> {
@@ -141,6 +157,7 @@ public class QuickMessagePopup extends Activity implements
     private boolean mFullTimestamp = false;
     private int mUnicodeStripping = MessagingPreferenceActivity.UNICODE_STRIPPING_LEAVE_INTACT;
     private UnicodeFilter mUnicodeFilter = null;
+    private boolean mEnableEmojis = false;
     private int mInputMethod;
 
     // Message pager
@@ -148,8 +165,17 @@ public class QuickMessagePopup extends Activity implements
     private MessagePagerAdapter mPagerAdapter;
 
     // Options menu items
-    private static final int MENU_ADD_TEMPLATE = 1;
-    private static final int MENU_ADD_TO_BLACKLIST = 2;
+    private static final int MENU_INSERT_SMILEY = 1;
+    private static final int MENU_ADD_TEMPLATE = 2;
+    private static final int MENU_INSERT_EMOJI = 3;
+    private static final int MENU_ADD_TO_BLACKLIST = 4;
+
+    // Smiley and Emoji support
+    private AlertDialog mSmileyDialog;
+    private AlertDialog mEmojiDialog;
+    private View mEmojiView;
+
+    public static int mCurrentConvSub = MSimConstants.SUB1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -171,6 +197,7 @@ public class QuickMessagePopup extends Activity implements
         mDarkTheme = prefs.getBoolean(MessagingPreferenceActivity.QM_DARK_THEME_ENABLED, false);
         mUnicodeStripping = prefs.getInt(MessagingPreferenceActivity.UNICODE_STRIPPING_VALUE,
                 MessagingPreferenceActivity.UNICODE_STRIPPING_LEAVE_INTACT);
+        mEnableEmojis = prefs.getBoolean(MessagingPreferenceActivity.ENABLE_EMOJIS, false);
         mInputMethod = Integer.parseInt(prefs.getString(MessagingPreferenceActivity.INPUT_TYPE,
                 Integer.toString(InputType.TYPE_TEXT_VARIATION_SHORT_MESSAGE)));
 
@@ -351,6 +378,16 @@ public class QuickMessagePopup extends Activity implements
         super.onCreateContextMenu(menu, v, menuInfo);
 
         menu.clear();
+
+        // Smileys menu item
+        menu.add(0, MENU_INSERT_SMILEY, 0, R.string.menu_insert_smiley)
+            .setIcon(R.drawable.ic_menu_emoticons);
+
+        // Emoji's menu item (if enabled)
+        if (mEnableEmojis) {
+            menu.add(0, MENU_INSERT_EMOJI, 0, R.string.menu_insert_emoji);
+        }
+
         // Templates menu item, if there are defined templates
         if (mNumTemplates > 0) {
             menu.add(0, MENU_ADD_TEMPLATE, 0, R.string.template_insert)
@@ -358,20 +395,25 @@ public class QuickMessagePopup extends Activity implements
             .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         }
 
-        // Add to Blacklist item (if enabled) and we are running on CyanogenMod
-        // This allows the app to be run on non-blacklist enabled roms (including Stock)
-        if (MessageUtils.isCyanogenMod(this)) {
-            if (BlacklistUtils.isBlacklistEnabled(this)) {
-                menu.add(0, MENU_ADD_TO_BLACKLIST, 0, R.string.add_to_blacklist)
-                        .setIcon(R.drawable.ic_block_message_holo_dark)
-                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-            }
+        // Add to Blacklist item (if enabled)
+        if (BlacklistUtils.isBlacklistEnabled(this)) {
+            menu.add(0, MENU_ADD_TO_BLACKLIST, 0, R.string.add_to_blacklist)
+                    .setIcon(R.drawable.ic_block_message_holo_dark)
+                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         }
     }
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case MENU_INSERT_SMILEY:
+                showSmileyDialog();
+                return true;
+
+            case MENU_INSERT_EMOJI:
+                showEmojiDialog();
+                return true;
+
             case MENU_ADD_TEMPLATE:
                 selectTemplate();
                 return true;
@@ -396,6 +438,177 @@ public class QuickMessagePopup extends Activity implements
      */
     private void selectTemplate() {
         getLoaderManager().restartLoader(0, null, this);
+    }
+
+    /**
+     * Copied from ComposeMessageActivity.java, this method displays the available
+     * smileys and allows the user to select and append it to the reply text. It
+     * has been modified to work with this class
+     */
+    private void showSmileyDialog() {
+        if (mSmileyDialog == null) {
+            int[] icons = SmileyParser.DEFAULT_SMILEY_RES_IDS;
+            String[] names = getResources().getStringArray(
+                    SmileyParser.DEFAULT_SMILEY_NAMES);
+            final String[] texts = getResources().getStringArray(
+                    SmileyParser.DEFAULT_SMILEY_TEXTS);
+
+            final int N = names.length;
+
+            List<Map<String, ?>> entries = new ArrayList<Map<String, ?>>();
+            for (int i = 0; i < N; i++) {
+                // We might have different ASCII for the same icon, skip it if
+                // the icon is already added.
+                boolean added = false;
+                for (int j = 0; j < i; j++) {
+                    if (icons[i] == icons[j]) {
+                        added = true;
+                        break;
+                    }
+                }
+                if (!added) {
+                    HashMap<String, Object> entry = new HashMap<String, Object>();
+
+                    entry. put("icon", icons[i]);
+                    entry. put("name", names[i]);
+                    entry.put("text", texts[i]);
+                    entries.add(entry);
+                }
+            }
+
+            final SimpleAdapter a = new SimpleAdapter(
+                    this,
+                    entries,
+                    R.layout.smiley_menu_item,
+                    new String[] {"icon", "name", "text"},
+                    new int[] {R.id.smiley_icon, R.id.smiley_name, R.id.smiley_text});
+            SimpleAdapter.ViewBinder viewBinder = new SimpleAdapter.ViewBinder() {
+                @Override
+                public boolean setViewValue(View view, Object data, String textRepresentation) {
+                    if (view instanceof ImageView) {
+                        Drawable img = getResources().getDrawable((Integer)data);
+                        ((ImageView)view).setImageDrawable(img);
+                        return true;
+                    }
+                    return false;
+                }
+            };
+            a.setViewBinder(viewBinder);
+
+            AlertDialog.Builder b = new AlertDialog.Builder(this);
+            b.setTitle(getString(R.string.menu_insert_smiley));
+            b.setCancelable(true);
+            b.setAdapter(a, new DialogInterface.OnClickListener() {
+                @Override
+                @SuppressWarnings("unchecked")
+                public final void onClick(DialogInterface dialog, int which) {
+                    HashMap<String, Object> item = (HashMap<String, Object>) a.getItem(which);
+                    String smiley = (String)item.get("text");
+
+                    // Get the currently visible message and append the smiley
+                    QuickMessage qm = mMessageList.get(mCurrentPage);
+                    if (qm != null) {
+                        // add the smiley at the cursor location or replace selected
+                        int start = qm.getEditText().getSelectionStart();
+                        int end = qm.getEditText().getSelectionEnd();
+                        qm.getEditText().getText().replace(Math.min(start, end),
+                                Math.max(start, end), smiley);
+                    }
+
+                    dialog.dismiss();
+                }
+            });
+
+            mSmileyDialog = b.create();
+        }
+
+        mSmileyDialog.show();
+    }
+
+    /**
+     * Copied from ComposeMessageActivity.java, this method displays the available
+     * emoji's and allows the user to select and insert one or more into a emoji text
+     * string which can then me appended to the the reply text.  It has been modified
+     * to work with this class
+     */
+    private void showEmojiDialog() {
+        if (mEmojiDialog == null) {
+            int[] icons = EmojiParser.DEFAULT_EMOJI_RES_IDS;
+
+            int layout = R.layout.emoji_insert_view;
+            mEmojiView = getLayoutInflater().inflate(layout, null);
+
+            final GridView gridView = (GridView) mEmojiView.findViewById(R.id.emoji_grid_view);
+            gridView.setAdapter(new ImageAdapter(this, icons));
+            final EditText editText = (EditText) mEmojiView.findViewById(R.id.emoji_edit_text);
+            final Button button = (Button) mEmojiView.findViewById(R.id.emoji_button);
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+            final boolean useSoftBankEmojiEncoding = prefs.getBoolean(MessagingPreferenceActivity.SOFTBANK_EMOJIS, false);
+
+            gridView.setOnItemClickListener(new OnItemClickListener() {
+                public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                    // We use the new unified Unicode 6.1 emoji code points by default
+                    CharSequence emoji;
+                    if (useSoftBankEmojiEncoding) {
+                        emoji = EmojiParser.getInstance().addEmojiSpans(EmojiParser.mSoftbankEmojiTexts[position]);
+                    } else {
+                        emoji = EmojiParser.getInstance().addEmojiSpans(EmojiParser.mEmojiTexts[position]);
+                    }
+                    editText.append(emoji);
+
+                }
+            });
+
+            gridView.setOnItemLongClickListener(new OnItemLongClickListener() {
+                @Override
+                public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
+                        long id) {
+                    // We use the new unified Unicode 6.1 emoji code points
+                    CharSequence emoji = EmojiParser.getInstance().addEmojiSpans(EmojiParser.mEmojiTexts[position]);
+
+                    // Get the currently visible message and append the emoji
+                    QuickMessage qm = mMessageList.get(mCurrentPage);
+                    if (qm != null) {
+                        // add the emoji at the cursor location or replace selected
+                        int start = qm.getEditText().getSelectionStart();
+                        int end = qm.getEditText().getSelectionEnd();
+                        qm.getEditText().getText().replace(Math.min(start, end),
+                                Math.max(start, end), emoji);
+                    }
+                    mEmojiDialog.dismiss();
+                    return true;
+                }
+            });
+
+            button.setOnClickListener(new android.view.View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Get the currently visible message and append the emoji
+                    QuickMessage qm = mMessageList.get(mCurrentPage);
+                    if (qm != null) {
+                        // add the emoji at the cursor location or replace selected
+                        int start = qm.getEditText().getSelectionStart();
+                        int end = qm.getEditText().getSelectionEnd();
+                        qm.getEditText().getText().replace(Math.min(start, end),
+                                Math.max(start, end), editText.getText());
+                    }
+                    mEmojiDialog.dismiss();
+                }
+            });
+
+            AlertDialog.Builder b = new AlertDialog.Builder(this);
+            b.setTitle(getString(R.string.menu_insert_emoji));
+            b.setCancelable(true);
+            b.setView(mEmojiView);
+
+            mEmojiDialog = b.create();
+        }
+
+        final EditText editText = (EditText) mEmojiView.findViewById(R.id.emoji_edit_text);
+        editText.setText("");
+
+        mEmojiDialog.show();
     }
 
     /**
@@ -625,7 +838,7 @@ public class QuickMessagePopup extends Activity implements
         if (message != null && qm != null) {
             long threadId = qm.getThreadId();
             SmsMessageSender sender = new SmsMessageSender(getBaseContext(),
-                    qm.getFromNumber(), message, threadId, qm.getSubId());
+                    qm.getFromNumber(), message, threadId, mCurrentConvSub);
             try {
                 if (DEBUG)
                     Log.d(LOG_TAG, "sendQuickMessage(): Sending message to " + qm.getFromName()
@@ -662,6 +875,31 @@ public class QuickMessagePopup extends Activity implements
 
         if (DEBUG)
             Log.d(LOG_TAG, "clearNotification(): Message list cleared. Size = " + mMessageList.size());
+    }
+
+    /**
+     * This method formats the message text to include smiley and emoji graphics as appropriate
+     *
+     * @param message - message to format
+     * @return - formatted message
+     */
+    private CharSequence formatMessage(String message) {
+        SpannableStringBuilder buf = new SpannableStringBuilder();
+
+        // Get the emojis  preference
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+        boolean enableEmojis = prefs.getBoolean(MessagingPreferenceActivity.ENABLE_EMOJIS, false);
+
+        if (!TextUtils.isEmpty(message)) {
+            SmileyParser parser = SmileyParser.getInstance();
+            CharSequence smileyBody = parser.addSmileySpans(message);
+            if (enableEmojis) {
+                EmojiParser emojiParser = EmojiParser.getInstance();
+                smileyBody = emojiParser.addEmojiSpans(smileyBody);
+            }
+            buf.append(smileyBody);
+        }
+        return buf;
     }
 
     /**
@@ -792,7 +1030,7 @@ public class QuickMessagePopup extends Activity implements
                 qmFromName.setText(qm.getFromName());
                 qmTimestamp.setText(MessageUtils.formatTimeStampString(mContext, qm.getTimestamp(), mFullTimestamp));
                 updateContactBadge(qmContactBadge, qm.getFromNumber()[0], false);
-                qmMessageText.setText(qm.getMessageBody());
+                qmMessageText.setText(formatMessage(qm.getMessageBody()));
 
                 if (!mDarkTheme) {
                     // We are using a holo.light background with a holo.dark activity theme

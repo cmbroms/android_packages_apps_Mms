@@ -25,6 +25,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Paint.FontMetricsInt;
 import android.graphics.Typeface;
@@ -32,6 +33,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.provider.ContactsContract.Profile;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Mms;
@@ -72,7 +74,9 @@ import com.android.mms.transaction.TransactionBundle;
 import com.android.mms.transaction.TransactionService;
 import com.android.mms.util.DownloadManager;
 import com.android.mms.util.ItemLoadedCallback;
+import com.android.mms.util.EmojiParser;
 import com.android.mms.util.MultiSimUtility;
+import com.android.mms.util.SmileyParser;
 import com.android.mms.util.ThumbnailManager.ImageLoaded;
 import com.google.android.mms.ContentType;
 import com.google.android.mms.pdu.PduHeaders;
@@ -369,7 +373,7 @@ public class MessageListItem extends LinearLayout implements
             if (mMessageItem.mSlideshow == null) {
                 debugText = "NULL slideshow";
             } else {
-                SlideModel slide = mMessageItem.mSlideshow.get(0);
+                SlideModel slide = ((SlideshowModel) mMessageItem.mSlideshow).get(0);
                 if (slide == null) {
                     debugText = "NULL first slide";
                 } else if (!slide.hasImage()) {
@@ -384,14 +388,16 @@ public class MessageListItem extends LinearLayout implements
         // If we're in the process of sending a message (i.e. pending), then we show a "SENDING..."
         // string in place of the timestamp.
         if (!sameItem || haveLoadedPdu) {
-            boolean isCountingDown = mMessageItem.getCountDown() > 0 &&
-                    MessagingPreferenceActivity.getMessageSendDelayDuration(mContext) > 0;
-            int sendingTextResId = isCountingDown
-                    ? R.string.sent_countdown : R.string.sending_message;
-
-            mDateView.setText(buildTimestampLine(mMessageItem.isSending() ?
-                    mContext.getResources().getString(sendingTextResId) :
-                    mMessageItem.mTimestamp));
+            if (MessagingPreferenceActivity.getMessageSendDelayDuration(mContext) > 0
+                    && mMessageItem.getCountDown() > 0) {
+                mDateView.setText(buildTimestampLine(mMessageItem.isSending() ?
+                        mContext.getResources().getString(R.string.sent_countdown) :
+                        mMessageItem.mTimestamp));
+            } else {
+                mDateView.setText(buildTimestampLine(mMessageItem.isSending() ?
+                        mContext.getResources().getString(R.string.sending_message) :
+                        mMessageItem.mTimestamp));
+            }
         }
         if (mMessageItem.isSms()) {
             showMmsView(false);
@@ -413,7 +419,6 @@ public class MessageListItem extends LinearLayout implements
                 showMmsView(false);
             }
             if (mMessageItem.mSlideshow == null) {
-                final int mCurrentAttachmentType = mMessageItem.mAttachmentType;
                 mMessageItem.setOnPduLoaded(new MessageItem.PduLoadedCallback() {
                     public void onPduLoaded(MessageItem messageItem) {
                         if (DEBUG) {
@@ -425,9 +430,7 @@ public class MessageListItem extends LinearLayout implements
                         if (messageItem != null && mMessageItem != null &&
                                 messageItem.getMessageId() == mMessageItem.getMessageId()) {
                             mMessageItem.setCachedFormattedMessage(null);
-                            boolean isStillSame =
-                                    mCurrentAttachmentType == messageItem.mAttachmentType;
-                            bindCommonMessage(isStillSame);
+                            bindCommonMessage(true);
                         }
                     }
                 });
@@ -562,16 +565,29 @@ public class MessageListItem extends LinearLayout implements
                                        String contentType) {
         SpannableStringBuilder buf = new SpannableStringBuilder();
 
-        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()
-                && !isSimCardMessage()) {
+        SharedPreferences prefs = PreferenceManager
+                .getDefaultSharedPreferences(mContext);
+        boolean enableEmojis = prefs.getBoolean(MessagingPreferenceActivity.ENABLE_EMOJIS, false);
+
+        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
             int subscription = subId + 1;
             buf.append("SUB" + subscription + ":");
             buf.append("\n");
         }
 
         boolean hasSubject = !TextUtils.isEmpty(subject);
+        SmileyParser parser = SmileyParser.getInstance();
         if (hasSubject) {
-            buf.append(mContext.getResources().getString(R.string.inline_subject, subject));
+            CharSequence smilizedSubject = parser.addSmileySpans(subject);
+            if (enableEmojis) {
+                EmojiParser emojiParser = EmojiParser.getInstance();
+                smilizedSubject = emojiParser.addEmojiSpans(smilizedSubject);
+            }
+            // Can't use the normal getString() with extra arguments for string replacement
+            // because it doesn't preserve the SpannableText returned by addSmileySpans.
+            // We have to manually replace the %s with our text.
+            buf.append(TextUtils.replace(mContext.getResources().getString(R.string.inline_subject),
+                    new String[] { "%s" }, new CharSequence[] { smilizedSubject }));
         }
 
         if (!TextUtils.isEmpty(body)) {
@@ -583,7 +599,12 @@ public class MessageListItem extends LinearLayout implements
                 if (hasSubject) {
                     buf.append(" - ");
                 }
-                buf.append(body);
+                CharSequence smileyBody = parser.addSmileySpans(body);
+                if (enableEmojis) {
+                    EmojiParser emojiParser = EmojiParser.getInstance();
+                    smileyBody = emojiParser.addEmojiSpans(smileyBody);
+                }
+                buf.append(smileyBody);
             }
         }
 
@@ -594,10 +615,6 @@ public class MessageListItem extends LinearLayout implements
             }
         }
         return buf;
-    }
-
-    private boolean isSimCardMessage() {
-        return (mContext instanceof ManageSimMessages);
     }
 
     private void drawPlaybackButton(MessageItem msgItem) {

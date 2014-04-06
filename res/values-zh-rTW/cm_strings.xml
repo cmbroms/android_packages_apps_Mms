@@ -30,6 +30,10 @@
     <string name="notification_multiple_title_privacy_mode">新訊息</string>
     <string name="notification_multiple_text_privacy_mode"><xliff:g id="number" example="3">%1$s</xliff:g> 則未讀訊息</string>
     <string name="notification_ticker_privacy_mode">收到新訊息</string>
+    <string name="pref_title_mms_notification_vibrate_pattern">震動模式</string>
+    <string name="pref_summary_mms_notification_vibrate_pattern">變更震動模式</string>
+    <string name="pref_title_mms_notification_vibrate_custom">自訂震動模式</string>
+    <string name="pref_text_mms_notification_vibrate_custom">設定震動間隔 (毫秒)</string>
     <string name="pref_quickmessage">快速回覆</string>
     <string name="pref_dark_theme_title">使用深色主題</string>
     <string name="pref_dark_theme_summary">如果未選取，則會使用預設的「淺色」主題</string>
@@ -67,6 +71,13 @@
     <string name="pref_unicode_stripping_leave_intact">保留完整字元</string>
     <string name="pref_unicode_stripping_non_encodable">去除不可編碼的字元</string>
     <string name="pref_unicode_stripping_all">去除所有 Unicode 字元</string>
+    <string name="pref_title_enable_emojis">繪文字支援</string>
+    <string name="pref_summary_enable_emojis">啟用 Unicode 繪文字 (471 個好看表情符號的集合) 支援</string>
+    <string name="menu_insert_emoji">插入繪文字</string>
+    <string name="pref_title_enable_quick_emojis">快速繪文字按鈕</string>
+    <string name="pref_summary_enable_quick_emojis">在文字輸入區域旁邊顯示按鈕以快速存取繪文字</string>
+    <string name="pref_title_enable_softbank_encoding">SoftBank 繪文字</string>
+    <string name="pref_summary_enable_softbank_encoding">使用 SoftBank 繪文字編碼</string>
     <string name="pref_title_mms_full_timestamp">完整時間戳記</string>
     <string name="pref_summary_mms_full_timestamp">在時間戳記中顯示日期和時間</string>
     <string name="pref_title_mms_use_sent_timestamp">原始時間戳記</string>
@@ -77,13 +88,26 @@
     <string name="pref_keyboard_unknown">不明，請重新選取</string>
     <string name="pref_title_sms_split_counter">分割計數器</string>
     <string name="pref_summary_sms_split_counter">在訊息中加入計數器，例如：(1/2)</string>
+    <string name="menu_insert_contact_info">插入聯絡人資訊</string>
+    <string name="cannot_find_contact">無法插入所選聯絡人的資訊</string>
+    <string name="insert_contact_info_positive_button">插入</string>
+    <string name="label_mms_push">傳送多媒體訊息</string>
+    <string name="desc_mms_push">從寄件夾傳送多媒體訊息到網路</string>
     <string name="blacklist_title">黑名單</string>
     <string name="blacklist_summary_disabled">停用</string>
     <string name="blacklist_summary">黑名單內電話號碼傳來的訊息將會被封鎖</string>
+    <string name="blacklist_notification">已封鎖 %s 傳來的訊息</string>
+    <string name="blacklist_notification_private_number">已封鎖私人號碼傳來的訊息</string>
+    <string name="blacklist_notification_list_private">私人</string>
+    <string name="blacklist_notification_unknown_number">已封鎖不明號碼 %s 傳來的訊息</string>
+    <string name="blacklist_notification_multiple">已封鎖 <xliff:g id="count">%d</xliff:g> 則訊息</string>
+    <string name="unblock_number">解除封鎖</string>
     <string name="add_to_blacklist">新增至黑名單</string>
     <string name="add_to_blacklist_message">%s 以後傳來的訊息將會被封鎖</string>
     <string name="alert_dialog_yes">是</string>
     <string name="alert_dialog_no">否</string>
+    <string name="storage_is_full">訊息資料庫已滿。請刪除一些會話群組。</string>
+    <string name="menu_resend">重新傳送</string>
     <string name="select_recipients">選取收件者</string>
     <string name="groups_header">群組</string>
     <string name="no_recipients">找不到聯絡人</string>

@@ -37,7 +37,12 @@
     <string name="template_not_present_error_title">"Eroare"</string>
     <string name="template_select">"Selectaţi un şablon"</string>
     <string name="gestures_already_present">"Avertisment: Un gest smilar este asociat cu un alt şablon!"</string>
+    <string name="pref_title_mms_notification_vibrate_pattern">"Model vibrare"</string>
+    <string name="pref_summary_mms_notification_vibrate_pattern">"Schimbaţi modelul de vibrare"</string>
+    <string name="pref_title_mms_notification_vibrate_custom">"Model vibrare personalizat"</string>
     <string name="pref_extra_settings">"Setări suplimentare"</string>
+    <string name="pref_title_enable_emojis">"Suport Emoji"</string>
+    <string name="pref_summary_enable_emojis">"Activaţi suportul pentru Unicode emojis, un set de 471 emoticoane simpatice"</string>
     <string name="pref_title_mms_full_timestamp">"Marcaje de timp integrale"</string>
     <string name="pref_summary_mms_full_timestamp">"Afişaţi atât data cât şi ora în marcajul de timp"</string>
     <string name="pref_title_mms_use_sent_timestamp">"Marcaje de timp originale"</string>

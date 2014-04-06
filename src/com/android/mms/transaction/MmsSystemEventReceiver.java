@@ -28,7 +28,6 @@ import android.util.Log;
 
 import com.android.mms.LogTag;
 import com.android.mms.MmsApp;
-import com.android.mms.util.MultiSimUtility;
 
 /**
  * MmsSystemEventReceiver receives the
@@ -46,10 +45,11 @@ public class MmsSystemEventReceiver extends BroadcastReceiver {
     private static ConnectivityManager mConnMgr = null;
 
     public static void wakeUpService(Context context) {
-        Log.d(TAG, "wakeUpService: start service ...");
-        MultiSimUtility.startSelectMmsSubsciptionServ(
-                context,
-                new Intent(context, TransactionService.class));
+        if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
+            Log.v(TAG, "wakeUpService: start transaction service ...");
+        }
+
+        context.startService(new Intent(context, TransactionService.class));
     }
 
     @Override
@@ -67,12 +67,6 @@ public class MmsSystemEventReceiver extends BroadcastReceiver {
                 mConnMgr = (ConnectivityManager) context
                         .getSystemService(Context.CONNECTIVITY_SERVICE);
             }
-            if (!mConnMgr.getMobileDataEnabled()) {
-                if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                    Log.v(TAG, "mobile data turned off, bailing");
-                }
-                return;
-            }
             NetworkInfo mmsNetworkInfo = mConnMgr
                     .getNetworkInfo(ConnectivityManager.TYPE_MOBILE_MMS);
             boolean available = false;
@@ -84,8 +78,10 @@ public class MmsSystemEventReceiver extends BroadcastReceiver {
                 isConnected = mmsNetworkInfo.isConnected();
             }
 
-            Log.d(TAG, "TYPE_MOBILE_MMS available = " + available +
+            if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
+                Log.v(TAG, "TYPE_MOBILE_MMS available = " + available +
                            ", isConnected = " + isConnected);
+            }
 
             // Wake up transact service when MMS data is available and isn't connected.
             if (available && !isConnected) {

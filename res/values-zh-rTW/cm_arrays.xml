@@ -34,5 +34,6 @@
         <item>長</item>
         <item>多次 (短)</item>
         <item>多次 (長)</item>
+        <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
 </resources>

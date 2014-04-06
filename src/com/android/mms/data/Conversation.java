@@ -28,7 +28,6 @@ import android.provider.Telephony.ThreadsColumns;
 import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.android.mms.LogTag;
 import com.android.mms.MmsApp;
@@ -41,6 +40,8 @@ import com.android.mms.util.AddressUtils;
 import com.android.mms.util.DraftCache;
 
 import com.google.android.mms.pdu.PduHeaders;
+import android.widget.Toast;
+
 /**
  * An interface for finding information about conversations and/or creating new ones.
  */
@@ -68,6 +69,7 @@ public class Conversation {
     private static final String[] SEEN_PROJECTION = new String[] {
         "seen"
     };
+
     private static final int ID             = 0;
     private static final int DATE           = 1;
     private static final int MESSAGE_COUNT  = 2;
@@ -102,8 +104,6 @@ public class Conversation {
     private static Object sDeletingThreadsLock = new Object();
     private boolean mMarkAsReadBlocked;
     private boolean mMarkAsReadWaiting;
-    private boolean mHasMmsForward = false; // True if has forward mms
-    private String mForwardRecipientNumber; // The recipient that the forwarded Mms received from
 
     private static Handler sToastHandler = new Handler();
 
@@ -400,8 +400,7 @@ public class Conversation {
                             mContext.getContentResolver().update(threadUri,
                                     sReadContentValues, UNREAD_SELECTION, null);
                         } catch (SQLiteFullException e) {
-                            Log.e(TAG, "Database is full");
-                            e.printStackTrace();
+                            Log.e(TAG, "Database is full", e);
                             showStorageFullToast(mContext);
                         } finally {
                             return null;
@@ -1171,8 +1170,7 @@ public class Conversation {
         try {
             resolver.update(Sms.Inbox.CONTENT_URI, values, "seen=0", null);
         } catch (SQLiteFullException e) {
-            Log.e(TAG, "Database is full");
-            e.printStackTrace();
+            Log.e(TAG, "Database is full", e);
             showStorageFullToast(context);
         }
     }
@@ -1181,8 +1179,9 @@ public class Conversation {
         sToastHandler.post(new Runnable() {
             @Override
             public void run() {
-                int duration = Toast.LENGTH_SHORT;
-                Toast.makeText(context, R.string.disk_storage_full_error, duration).show();
+                final CharSequence text = context.getString(R.string.storage_is_full);
+                final int duration = Toast.LENGTH_SHORT;
+                Toast.makeText(context, text, duration).show();
             }
         });
     }
@@ -1219,8 +1218,7 @@ public class Conversation {
         try {
             resolver.update(Mms.Inbox.CONTENT_URI, values, "seen=0", null);
         } catch (SQLiteFullException e) {
-            Log.e(TAG, "Database is full");
-            e.printStackTrace();
+            Log.e(TAG, "Database is full", e);
             showStorageFullToast(context);
         }
 
@@ -1490,21 +1488,5 @@ public class Conversation {
                     " recipient from DB: " + address);
         }
         return address;
-    }
-
-    public boolean getHasMmsForward() {
-        return mHasMmsForward;
-    }
-
-    public void setHasMmsForward(boolean value) {
-        mHasMmsForward = value;
-    }
-
-    public String getForwardRecipientNumber() {
-        return mForwardRecipientNumber;
-    }
-
-    public void setForwardRecipientNumber(String forwardRecipientNumber) {
-        mForwardRecipientNumber = forwardRecipientNumber;
     }
 }

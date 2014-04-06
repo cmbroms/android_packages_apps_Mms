@@ -26,13 +26,11 @@ import android.database.sqlite.SqliteWrapper;
 import android.net.Uri;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Mms.Sent;
-import android.telephony.MSimTelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.mms.LogTag;
 import com.android.mms.ui.MessageUtils;
-import com.android.mms.util.MultiSimUtility;
 import com.android.mms.util.RateController;
 import com.android.mms.util.SendingProgressTokenManager;
 import com.google.android.mms.pdu.EncodedStringValue;
@@ -60,7 +58,7 @@ public class SendTransaction extends Transaction implements Runnable {
     private static final String TAG = "SendTransaction";
 
     private Thread mThread;
-    public final Uri mSendReqURI;
+    private final Uri mSendReqURI;
 
     public SendTransaction(Context context,
             int transId, TransactionSettings connectionSettings, String uri) {
@@ -105,15 +103,7 @@ public class SendTransaction extends Transaction implements Runnable {
                                  mSendReqURI, values, null, null);
 
             // fix bug 2100169: insert the 'from' address per spec
-            String lineNumber;
-            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                lineNumber = MessageUtils.getLocalNumber(
-                        MultiSimUtility.getCurrentDataSubscription(mContext));
-                Log.d(TAG, "lineNumber " + lineNumber);
-            } else {
-                lineNumber = MessageUtils.getLocalNumber();
-            }
-
+            String lineNumber = MessageUtils.getLocalNumber();
             if (!TextUtils.isEmpty(lineNumber)) {
                 sendReq.setFrom(new EncodedStringValue(lineNumber));
             }

@@ -83,8 +83,4 @@ public class QuickMessage {
     public long getThreadId() {
         return mContent.mThreadId;
     }
-
-    public int getSubId() {
-        return mContent.mSubId;
-    }
 }

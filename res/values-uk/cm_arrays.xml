@@ -20,5 +20,6 @@
         <item>Довга вібрація</item>
         <item>Кілька коротких</item>
         <item>Кілька довгих</item>
+        <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
 </resources>

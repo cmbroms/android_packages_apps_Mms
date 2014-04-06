@@ -30,6 +30,10 @@
     <string name="notification_multiple_title_privacy_mode">يېڭى ئۇچۇر</string>
     <string name="notification_multiple_text_privacy_mode">ئوقۇلمىغان ئۇچۇر <xliff:g id="number" example="3">%1$s</xliff:g></string>
     <string name="notification_ticker_privacy_mode">يېڭى ئۇچۇر قوبۇللاندى</string>
+    <string name="pref_title_mms_notification_vibrate_pattern">تىترەش ئەندىزە</string>
+    <string name="pref_summary_mms_notification_vibrate_pattern">تىترەش ئەندىزە ئۆزگەرت</string>
+    <string name="pref_title_mms_notification_vibrate_custom">ئۆزلەشتۈرگەن تىترەش ئەندىزە</string>
+    <string name="pref_text_mms_notification_vibrate_custom">مىللىسېكۇنت ئاچ/تاقا پىچىمى: تاقا، ئاچ، تاقا، ئاچ\u2026</string>
     <string name="pref_quickmessage">تېز جاۋاب</string>
     <string name="pref_dark_theme_title">قاراڭغۇ ئۆرنەك ئىشلەت</string>
     <string name="pref_dark_theme_summary">ئەگەر تاللانمىسا، كۆڭۈلدىكى \'يورۇق\' ئۆرنەكنى ئىشلىتىدۇ</string>
@@ -67,6 +71,13 @@
     <string name="pref_unicode_stripping_leave_intact">ھەرپلەر ئۆزگەرمىسۇن</string>
     <string name="pref_unicode_stripping_non_encodable">كودلانمايدىغان ھەرپلەرنى تازىلىۋەت</string>
     <string name="pref_unicode_stripping_all">بارلىق يۇنىكود ھەرپلەرنى چىقىرىۋەت</string>
+    <string name="pref_title_enable_emojis">چىراي ئىپادە قوللاش</string>
+    <string name="pref_summary_enable_emojis">يۇنىكود چىراي ئىپادىسىدىن 471 نى قوللاشنى قوزغىتىدۇ</string>
+    <string name="menu_insert_emoji">ئىپادە بەلگە قىستۇر</string>
+    <string name="pref_title_enable_quick_emojis">تېز ئىپادە بەلگە توپچە</string>
+    <string name="pref_summary_enable_quick_emojis">كىرگۈزۈش رامكىسىنىڭ سول تەرىپىدە ئىپادە بەلگىنى تېز قىستۇرىدىغان توپچەدىن بىرنى كۆرسىتىدۇ</string>
+    <string name="pref_title_enable_softbank_encoding">SoftBank ئىپادە بەلگە</string>
+    <string name="pref_summary_enable_softbank_encoding">SoftBank ئىپادە بەلگە كودلىشىنى ئىشلەت</string>
     <string name="pref_title_mms_full_timestamp">مۇكەممەل ۋاقىت تامغىسى</string>
     <string name="pref_summary_mms_full_timestamp">ۋاقىت تامغىسىدا چېسلا ۋە ۋاقىتنى كۆرسىتىدۇ</string>
     <string name="pref_title_mms_use_sent_timestamp">دەسلەپكى ۋاقىت تامغىسى</string>
@@ -77,13 +88,26 @@
     <string name="pref_keyboard_unknown">يوچۇن، قايتا تاللاڭ</string>
     <string name="pref_title_sms_split_counter">پارچە سانى</string>
     <string name="pref_summary_sms_split_counter">پارچىلىغان ئۇچۇرغا تەرتىپ بەلگىسى قوش، مەسىلەن: (1/2)</string>
+    <string name="menu_insert_contact_info">ئالاقەداش ئۇچۇرىنى قىستۇر</string>
+    <string name="cannot_find_contact">تاللانغان ئالاقەدەش ئۇچۇرىنى قىتۇرالمايدۇ</string>
+    <string name="insert_contact_info_positive_button">قىستۇر</string>
+    <string name="label_mms_push">MMS يوللاش</string>
+    <string name="desc_mms_push">MMS نى يوللاش ساندۇقىدىن تورغا يوللايدۇ</string>
     <string name="blacklist_title">قارا تىزىم</string>
     <string name="blacklist_summary_disabled">چەكلەنگەن</string>
     <string name="blacklist_summary">قارا تىزىمغا كىرگۈزۈلگەن تېلېفون نومۇرىدىن كەلگەن ئۇچۇرلار توسۇلىدۇ</string>
+    <string name="blacklist_notification">%s نىڭ ئۇچۇرىنى توستى</string>
+    <string name="blacklist_notification_private_number">شەخسىي نومۇردىن كەلگەن ئۇچۇرنى توستى</string>
+    <string name="blacklist_notification_list_private">شەخسىي</string>
+    <string name="blacklist_notification_unknown_number">يوچۇن نومۇر %s دىن كەلگەن بىر ئۇچۇرنى توستى</string>
+    <string name="blacklist_notification_multiple"><xliff:g id="count">%d</xliff:g> ئۇچۇر توسۇلدى</string>
+    <string name="unblock_number">توسما</string>
     <string name="add_to_blacklist">قارا تىزىمغا قوش</string>
     <string name="add_to_blacklist_message">كەلگۈسىدە %s دىن كەلگەن ئۇچۇرنى توسىدۇ</string>
     <string name="alert_dialog_yes">ھەئە</string>
     <string name="alert_dialog_no">ياق</string>
+    <string name="storage_is_full">ئۇچۇر ساندانى توشتى. بەزى سۆزلىشىشلەرنى ئۆچۈرۈڭ.</string>
+    <string name="menu_resend">قايتا يوللا</string>
     <string name="select_recipients">تاپشۇرۇۋالغۇچىنى تاللاڭ</string>
     <string name="groups_header">گۇرۇپپا</string>
     <string name="no_recipients">ئالاقەداش تېپىلمىدى</string>
@@ -92,4 +116,12 @@
     <string name="menu_mobile">يان تېلېفون نومۇرلا</string>
     <string name="menu_groups">گۇرۇپپىلارنى كۆرسەت</string>
     <string name="fastscroll_index_groups">GR</string>
+    <string name="pref_title_send_delay">قىسقا ئۇچۇرنى كېچىكتۈرۈپ يوللا</string>
+    <string name="send_delay_immediate">دەرھال يوللا</string>
+    <string name="send_delay_3seconds">3 سېكۇنت</string>
+    <string name="send_delay_5seconds">5 سېكۇنت</string>
+    <string name="send_delay_10seconds">10 سېكۇنت</string>
+    <string name="send_delay_20seconds">20 سېكۇنت</string>
+    <string name="send_delay_30seconds">30 سېكۇنت</string>
+    <string name="sent_countdown">كېچىكتۈرۈپ يوللاش تەتۈر سانىقى</string>
 </resources>

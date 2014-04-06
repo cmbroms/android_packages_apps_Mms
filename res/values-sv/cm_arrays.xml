@@ -34,6 +34,5 @@
         <item>Lång vibration</item>
         <item>Flera korta</item>
         <item>Flera långa</item>
-        <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
 </resources>

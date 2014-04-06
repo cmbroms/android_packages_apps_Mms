@@ -1,9 +1,8 @@
 /*
+ * Copyright (c) 2012 The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2007-2008 Esmertec AG.
  * Copyright (C) 2007-2008 The Android Open Source Project
- * Copyright (c) 2012 The Linux Foundation. All rights reserved.
- *
- * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +19,7 @@
 
 package com.android.mms.transaction;
 
-import static android.provider.Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION;
+import static android.provider.Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION;
 import static com.google.android.mms.pdu.PduHeaders.MESSAGE_TYPE_DELIVERY_IND;
 import static com.google.android.mms.pdu.PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND;
 import static com.google.android.mms.pdu.PduHeaders.MESSAGE_TYPE_READ_ORIG_IND;
@@ -180,11 +179,8 @@ public class PushReceiver extends BroadcastReceiver {
                             ContentValues values = new ContentValues(1);
                             values.put(Mms.SUB_ID, subId);
 
-                            // Save the pdu. If we can start downloading the real pdu immediately,
-                            // don't allow persist() to create a thread for the notificationInd
-                            // because it causes UI jank.
                             Uri uri = p.persist(pdu, Inbox.CONTENT_URI,
-                                    !NotificationTransaction.allowAutoDownload(),
+                                    true,
                                     MessagingPreferenceActivity.getIsGroupMmsEnabled(mContext),
                                     null);
 
@@ -285,7 +281,7 @@ public class PushReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         mContext = context;
-        if (intent.getAction().equals(WAP_PUSH_RECEIVED_ACTION)
+        if (intent.getAction().equals(WAP_PUSH_DELIVER_ACTION)
                 && ContentType.MMS_MESSAGE.equals(intent.getType())) {
             if (LOCAL_LOGV) {
                 Log.v(TAG, "Received PUSH Intent: " + intent);

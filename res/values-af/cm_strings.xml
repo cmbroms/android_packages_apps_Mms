@@ -16,13 +16,6 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="pref_extra_settings">Ekstra instellings</string>
-    <string name="pref_title_enable_emojis">Emoji ondersteuning</string>
-    <string name="pref_summary_enable_emojis">Aktiveer ondersteuning vir unicode emojis, \'n stel van 471 mooi prentjie ikone</string>
-    <string name="menu_insert_emoji">Plaas emoji ikone</string>
-    <string name="pref_title_enable_quick_emojis">Vinnige emoji knoppie</string>
-    <string name="pref_summary_enable_quick_emojis">Vertoon \'n knoppie langs die teks veld vir vinnige toegang tot emoji</string>
-    <string name="pref_title_enable_softbank_encoding">SoftBank emoji</string>
-    <string name="pref_summary_enable_softbank_encoding">Gebruik SoftBank emoji enkodering</string>
     <string name="pref_title_sms_split_counter">Verdeel teller</string>
     <string name="pref_summary_sms_split_counter">Voeg teller by boodskap bv. (1/2)</string>
     <string name="prefs_templates_settings">SMS sjablone</string>
@@ -48,10 +41,6 @@
     <string name="template_confirm_dialog_title">Verwyder?</string>
     <string name="gestures_already_present">Waarskuwing: \'n soortgelyke gebaar is alreeds geassosieer met \'n ander sjabloon!</string>
     <string name="select_template">Kies \'n sjabloon</string>
-    <string name="pref_title_mms_notification_vibrate_pattern">Vibrasie patroon</string>
-    <string name="pref_summary_mms_notification_vibrate_pattern">Verander die vibrasie patroon</string>
-    <string name="pref_title_mms_notification_vibrate_custom">Pasgemaakte vibrasie patroon</string>
-    <string name="pref_text_mms_notification_vibrate_custom">Af/aan formaat in millisekondes ...</string>
     <string name="pref_title_mms_full_timestamp">Volledige tydstempel</string>
     <string name="pref_summary_mms_full_timestamp">Vertoon beide die datum en die tyd in die tydstempel</string>
     <string name="pref_title_mms_use_sent_timestamp">Tydstempel</string>
@@ -89,26 +78,13 @@
     <string name="toast_sending_message">Die boodskap word gestuur</string>
     <string name="qm_quick_reply">Antwoord</string>
     <string name="qm_mark_read">Gelees</string>
-    <string name="menu_insert_contact_info">Voeg kontak besonderhede by</string>
-    <string name="cannot_find_contact">Kan nie die inligting van die gekose kontak byvoeg nie</string>
-    <string name="insert_contact_info_positive_button">Voeg by</string>
-    <string name="label_mms_push">MMS stoot</string>
-    <string name="desc_mms_push">Stoot MMS van uitkassie na die netwerk toe</string>
     <string name="blacklist_title">Blokeringslys</string>
     <string name="blacklist_summary_disabled">Gedeaktiveer</string>
     <string name="blacklist_summary">Inkomende boodskappe van telefoon nommers in die blokeringslys sal geblokkeer word</string>
-    <string name="blacklist_notification">\'n Boodskap van %s geblokkeer</string>
-    <string name="blacklist_notification_private_number">\'n Boodskap van \'n private nommer geblokkeer</string>
-    <string name="blacklist_notification_list_private">Privaat</string>
-    <string name="blacklist_notification_unknown_number">\'n Boodskap van onbekende nommer %s geblokkeer</string>
-    <string name="blacklist_notification_multiple"><xliff:g id="count">%d</xliff:g> boodskappe is geblokkeer</string>
-    <string name="unblock_number">Onblokkeer</string>
     <string name="add_to_blacklist">Voeg tot blokeringslys</string>
     <string name="add_to_blacklist_message">Toekomstige boodskappe van %s sal geblokkeer word</string>
     <string name="alert_dialog_yes">Ja</string>
     <string name="alert_dialog_no">Nee</string>
-    <string name="storage_is_full">Die boodskap databasis is vol. Verwyder \'n aantal gesprekke.</string>
-    <string name="menu_resend">Herstuur</string>
     <string name="select_recipients">Kies ontvangers</string>
     <string name="groups_header">Groepe</string>
     <string name="no_recipients">Geen kontakte gevind nie</string>
@@ -117,24 +93,6 @@
     <string name="menu_mobile">Slegs mobiele nommers</string>
     <string name="menu_groups">Wys groepe</string>
     <string name="fastscroll_index_groups">GR</string> <!-- CHAR LIMIT=3 -->
-    <string name="mms1">MMS1</string>
-    <string name="mms2">MMS2</string>
-    <string name="mms3">MMS3</string>
-    <string name="sub1">SUB 1</string>
-    <string name="sub2">SUB 2</string>
-    <string name="sub3">SUB 3</string>
-    <string name="select_subscription_title">Selekteur subskripsie</string>
-    <string name="subscription1_title">Subskripsie 1</string>
-    <string name="subscription2_title">Subskripsie 2</string>
-    <string name="subscription3_title">Subskripsie 3</string>
-    <string name="pending_mms_title">Hangende MMS op ander subskripsie.</string>
-    <string name="pending_mms">Boodskappe: Een of meer MMS hangende.</string>
-    <string name="pending_mms_text">Raak om die subskripsie te verander.</string>
-    <string name="abort_mms">Boodskappe: Staak MMS</string>
-    <string name="abort_mms_text">Raak om te staak en terug skakel.</string>
-    <string name="progress_mms_title">MMS transaksie op ander sub aan die gang</string>
-    <string name="progress_mms">Boodskappe: MMS aan die gang\u2026</string>
-    <string name="progress_mms_text">Raak om om weer te herprobeer</string>
     <string name="pref_title_send_delay">Vertraag aflewering</string>
     <string name="send_delay_immediate">Stuur onmiddellik</string>
     <string name="send_delay_3seconds">3 sekondes</string>
@@ -143,4 +101,11 @@
     <string name="send_delay_20seconds">20 sekondes</string>
     <string name="send_delay_30seconds">30 sekondes</string>
     <string name="sent_countdown">Boodskap aflewering wag tydperk</string>
+    <string name="pref_title_mms_notification_vibrate_pattern">Vibreer patroon</string>
+    <string name="pref_summary_mms_notification_vibrate_pattern">Verander vibreer patroon</string>
+    <string name="pref_mms_notification_vibrate_normal">Normaal</string>
+    <string name="pref_mms_notification_vibrate_med_vib">Medium vibreer</string>
+    <string name="pref_mms_notification_vibrate_long_vib">Lank vibreer</string>
+    <string name="pref_mms_notification_vibrate_mult_short">Meerdere kort</string>
+    <string name="pref_mms_notification_vibrate_mult_long">Meerdere lank</string>
 </resources>

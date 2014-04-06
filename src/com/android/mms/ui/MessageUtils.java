@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import android.app.Activity;
@@ -42,6 +40,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.SystemProperties;
 import android.provider.MediaStore;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Sms;
@@ -51,6 +50,7 @@ import android.text.format.DateUtils;
 import android.text.format.Time;
 import android.text.style.URLSpan;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.android.mms.LogTag;
@@ -86,6 +86,8 @@ public class MessageUtils {
         void onResizeResult(PduPart part, boolean append);
     }
 
+    private static final int SELECT_SYSTEM = 0;
+    private static final int SELECT_EXTERNAL = 1;
     private static final String TAG = LogTag.TAG;
     private static String sLocalNumber;
     private static String[] sNoSubjectStrings;
@@ -113,6 +115,9 @@ public class MessageUtils {
     };
 
     private static HashMap numericSugarMap = new HashMap (NUMERIC_CHARS_SUGAR.length);
+
+    // Save the thread id for same recipient forward mms
+    public static ArrayList<Long> sSameRecipientList = new ArrayList<Long>();
 
     static {
         for (int i = 0; i < NUMERIC_CHARS_SUGAR.length; i++) {
@@ -482,14 +487,44 @@ public class MessageUtils {
         return DateUtils.formatDateTime(context, when, format_flags);
     }
 
-    public static void selectAudio(Activity activity, int requestCode) {
-        Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_INCLUDE_DRM, false);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,
-                activity.getString(R.string.select_audio));
-        activity.startActivityForResult(intent, requestCode);
+    public static void selectAudio(final Activity activity, final int requestCode) {
+        // We are not only displaying default RingtonePicker to add, we could have
+        // other choices like external audio and system audio. Allow user to select
+        // an audio from particular storage (Internal or External) and return it.
+        String[] items = new String[2];
+        items[SELECT_SYSTEM] = activity.getString(R.string.system_audio_item);
+        items[SELECT_EXTERNAL] = activity.getString(R.string.external_audio_item);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(activity,
+                android.R.layout.simple_list_item_1, android.R.id.text1, items);
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        AlertDialog dialog = builder.setTitle(activity.getString(R.string.select_audio))
+                .setAdapter(adapter, new OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent audioIntent = null;
+                        switch (which) {
+                            case SELECT_SYSTEM:
+                                audioIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+                                audioIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,
+                                        false);
+                                audioIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,
+                                        false);
+                                audioIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_INCLUDE_DRM,
+                                        false);
+                                audioIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,
+                                        activity.getString(R.string.select_audio));
+                                break;
+                            case SELECT_EXTERNAL:
+                                audioIntent = new Intent();
+                                audioIntent.setAction(Intent.ACTION_PICK);
+                                audioIntent.setData(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+                                break;
+                        }
+                        activity.startActivityForResult(audioIntent, requestCode);
+                    }
+                })
+                .create();
+        dialog.show();
     }
 
     public static void recordSound(Activity activity, int requestCode, long sizeLimit) {
@@ -694,9 +729,13 @@ public class MessageUtils {
     }
 
     public static String getLocalNumber() {
-        if (null == sLocalNumber) {
-            sLocalNumber = MmsApp.getApplication().getTelephonyManager().getLine1Number();
-        }
+        sLocalNumber = MmsApp.getApplication().getTelephonyManager().getLine1Number();
+        return sLocalNumber;
+    }
+
+    public static String getLocalNumber(int subscription) {
+        sLocalNumber = MmsApp.getApplication().getMSimTelephonyManager().
+                getLine1Number(subscription);
         return sLocalNumber;
     }
 
@@ -1027,23 +1066,23 @@ public class MessageUtils {
         return null;
     }
 
-    static final String[] MMS_REPORT_REQUEST_PROJECTION = new String[] {
-            Mms.Addr.ADDRESS,       //0
-            Mms.DELIVERY_REPORT,    //1
-            Mms.READ_REPORT         //2
+    private static final String[] MMS_REPORT_REQUEST_PROJECTION = new String[] {
+        Mms.Addr.ADDRESS,       //0
+        Mms.DELIVERY_REPORT,    //1
+        Mms.READ_REPORT         //2
     };
 
-    static final String[] MMS_REPORT_STATUS_PROJECTION = new String[] {
-            Mms.Addr.ADDRESS,       //0
-            "delivery_status",      //1
-            "read_status"           //2
+    private static final String[] MMS_REPORT_STATUS_PROJECTION = new String[] {
+        Mms.Addr.ADDRESS,       //0
+        "delivery_status",      //1
+        "read_status"           //2
     };
 
-    static final String[] SMS_REPORT_STATUS_PROJECTION = new String[] {
-            Sms.ADDRESS,            //0
-            Sms.STATUS,             //1
-            Sms.DATE_SENT,          //2
-            Sms.TYPE                //3
+    private static final String[] SMS_REPORT_STATUS_PROJECTION = new String[] {
+        Sms.ADDRESS,            //0
+        Sms.STATUS,             //1
+        Sms.DATE_SENT,          //2
+        Sms.TYPE                //3
     };
 
     // These indices must sync up with the projections above.
@@ -1099,18 +1138,16 @@ public class MessageUtils {
         }
     }
 
-    private static String getMmsReportStatusText(
-            MmsReportRequest request,
-            Map<String, MmsReportStatus> reportStatus,
-            Resources res) {
+    private static String getMmsReportStatusText(MmsReportRequest request,
+            Map<String, MmsReportStatus> reportStatus, Resources res) {
         if (reportStatus == null) {
             // haven't received any reports.
             return res.getString(R.string.status_pending);
         }
 
         String recipient = request.getRecipient();
-        recipient = (Mms.isEmailAddress(recipient))?
-                Mms.extractAddrSpec(recipient): PhoneNumberUtils.stripSeparators(recipient);
+        recipient = Mms.isEmailAddress(recipient)
+                ? Mms.extractAddrSpec(recipient) : PhoneNumberUtils.stripSeparators(recipient);
         MmsReportStatus status = queryStatusByRecipient(reportStatus, recipient);
         if (status == null) {
             // haven't received any reports.
@@ -1143,16 +1180,12 @@ public class MessageUtils {
 
     private static MmsReportStatus queryStatusByRecipient(
             Map<String, MmsReportStatus> status, String recipient) {
-        Set<String> recipientSet = status.keySet();
-        Iterator<String> iterator = recipientSet.iterator();
-        while (iterator.hasNext()) {
-            String r = iterator.next();
+        for (String r : status.keySet()) {
             if (Mms.isEmailAddress(recipient)) {
                 if (TextUtils.equals(r, recipient)) {
                     return status.get(r);
                 }
-            }
-            else if (PhoneNumberUtils.compare(r, recipient)) {
+            } else if (PhoneNumberUtils.compare(r, recipient)) {
                 return status.get(r);
             }
         }
@@ -1162,7 +1195,7 @@ public class MessageUtils {
     private static String getMmsReportDetails(Context context, long messageId) {
         Resources res = context.getResources();
         ArrayList<MmsReportRequest> reportReqs = getMmsReportRequests(context, messageId);
-        if (reportReqs == null || reportReqs.size() == 0) {
+        if (reportReqs == null || reportReqs.isEmpty()) {
             return res.getString(R.string.status_label) + res.getString(R.string.status_none);
         }
 
@@ -1179,8 +1212,8 @@ public class MessageUtils {
         return details.toString().trim();
     }
 
-    private static Map<String, MmsReportStatus> getMmsReportStatus(Context context,
-                                                                   long messageId) {
+    private static Map<String, MmsReportStatus> getMmsReportStatus(
+            Context context, long messageId) {
         Uri uri = Uri.withAppendedPath(Mms.REPORT_STATUS_URI,
                 String.valueOf(messageId));
         Cursor c = SqliteWrapper.query(context, context.getContentResolver(), uri,
@@ -1191,14 +1224,13 @@ public class MessageUtils {
         }
 
         try {
-            Map<String, MmsReportStatus> statusMap =
-                    new HashMap<String, MmsReportStatus>();
+            Map<String, MmsReportStatus> statusMap = new HashMap<String, MmsReportStatus>();
 
             while (c.moveToNext()) {
                 String recipient = c.getString(COLUMN_RECIPIENT);
-                recipient = (Mms.isEmailAddress(recipient))?
-                        Mms.extractAddrSpec(recipient):
-                        PhoneNumberUtils.stripSeparators(recipient);
+                recipient = Mms.isEmailAddress(recipient)
+                        ? Mms.extractAddrSpec(recipient)
+                        : PhoneNumberUtils.stripSeparators(recipient);
                 MmsReportStatus status = new MmsReportStatus(
                         c.getInt(COLUMN_DELIVERY_STATUS),
                         c.getInt(COLUMN_READ_STATUS));
@@ -1210,8 +1242,8 @@ public class MessageUtils {
         }
     }
 
-    private static ArrayList<MmsReportRequest> getMmsReportRequests(Context context,
-                                                                    long messageId) {
+    private static ArrayList<MmsReportRequest> getMmsReportRequests(
+            Context context, long messageId) {
         Uri uri = Uri.withAppendedPath(Mms.REPORT_REQUEST_URI,
                 String.valueOf(messageId));
         Cursor c = SqliteWrapper.query(context, context.getContentResolver(), uri,
@@ -1291,5 +1323,16 @@ public class MessageUtils {
 
     private static void log(String msg) {
         Log.d(TAG, "[MsgUtils] " + msg);
+    }
+
+    public static boolean isCyanogenMod(Context context) {
+        try {
+            String version = SystemProperties.get("ro.cm.version");
+            if (!version.isEmpty()) {
+                return true;
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return false;
     }
 }

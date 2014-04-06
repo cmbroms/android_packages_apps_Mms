@@ -14,7 +14,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="menu_insert_emoji">Umetni emoji</string>
     <string name="pref_title_sms_split_counter">Brojač prijeloma</string>
     <string name="pref_summary_sms_split_counter">Dodaj brojač prijeloma poruka npr. (1/2)</string>
     <string name="prefs_templates_settings">Sms predlošci</string>
@@ -38,15 +37,7 @@
     <string name="template_not_present_error_title">Greška</string>
     <string name="template_select">Odaberite predložak</string>
     <string name="gestures_already_present">Upozorenje: Drugi predložak ima sličnu gestu!</string>
-    <string name="pref_title_mms_notification_vibrate_pattern">Vibracijski uzorak</string>
-    <string name="pref_summary_mms_notification_vibrate_pattern">Promjenite vibracijski uzorak</string>
-    <string name="pref_title_mms_notification_vibrate_custom">Vlastiti vibracijski uzorak</string>
-    <string name="pref_text_mms_notification_vibrate_custom">Format off/on u milisekundama: off, on, off, on, ...</string>
     <string name="pref_extra_settings">Dodatne postavke</string>
-    <string name="pref_title_enable_emojis">Emoji podrška</string>
-    <string name="pref_summary_enable_emojis">Uključi podršku za unicode emojije</string>
-    <string name="pref_title_enable_softbank_encoding">Softbank emoji</string>
-    <string name="pref_summary_enable_softbank_encoding">Uključi podršku za SoftBank emoji enkodiranje</string>
     <string name="pref_title_mms_full_timestamp">Puna vremenska oznaka</string>
     <string name="pref_summary_mms_full_timestamp">Prikaži i datum i vrijeme u vremenskim oznakama</string>
     <string name="pref_title_mms_use_sent_timestamp">Orginalna vremenska oznaka</string>

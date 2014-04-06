@@ -30,10 +30,6 @@
     <string name="notification_multiple_title_privacy_mode">Nye meldinger</string>
     <string name="notification_multiple_text_privacy_mode"><xliff:g id="number" example="3">%1$s</xliff:g> uleste meldinger</string>
     <string name="notification_ticker_privacy_mode">Ny melding mottatt</string>
-    <string name="pref_title_mms_notification_vibrate_pattern">Vibreringsmønster</string>
-    <string name="pref_summary_mms_notification_vibrate_pattern">Endre vibreringsmønster</string>
-    <string name="pref_title_mms_notification_vibrate_custom">Egendefinert mønster</string>
-    <string name="pref_text_mms_notification_vibrate_custom">Format av/på i millisekunder: av, på, av, på\u2026</string>
     <string name="pref_quickmessage">Hurtigsvar</string>
     <string name="pref_dark_theme_title">Bruk mørkt tema</string>
     <string name="pref_dark_theme_summary">Hvis ikke valgt, vil \'Lyst\' tema bli brukt.</string>
@@ -71,13 +67,6 @@
     <string name="pref_unicode_stripping_leave_intact">Forlat tegn intakte</string>
     <string name="pref_unicode_stripping_non_encodable">Fjern ikke-kodbare tegn</string>
     <string name="pref_unicode_stripping_all">Fjern alle unicode-tegn</string>
-    <string name="pref_title_enable_emojis">Støtte for Emoji</string>
-    <string name="pref_summary_enable_emojis">Aktiver støtte for unicode emojis, 471 fine uttrykksikoner</string>
-    <string name="menu_insert_emoji">Sett inn emoji</string>
-    <string name="pref_title_enable_quick_emojis">Knapp for emoji</string>
-    <string name="pref_summary_enable_quick_emojis">Vis en knapp ved siden av inndata-området for rask tilgang til emojis</string>
-    <string name="pref_title_enable_softbank_encoding">SoftBank emoji</string>
-    <string name="pref_summary_enable_softbank_encoding">Bruk SoftBank-koding for emoji</string>
     <string name="pref_title_mms_full_timestamp">Hele tidsstempler</string>
     <string name="pref_summary_mms_full_timestamp">Vis både dato og tid i tidsstempler</string>
     <string name="pref_title_mms_use_sent_timestamp">Originale tidsstempler</string>
@@ -88,7 +77,4 @@
     <string name="pref_keyboard_unknown">Ukjent, vennligst velg igjen</string>
     <string name="pref_title_sms_split_counter">Meldingsteller</string>
     <string name="pref_summary_sms_split_counter">Legger til teller i meldingen, f.eks. (1/2)</string>
-    <string name="menu_insert_contact_info">Sett inn kontaktinfo</string>
-    <string name="cannot_find_contact">Klarer ikke sette inn informasjon i den valgte kontakten</string>
-    <string name="insert_contact_info_positive_button">Sett inn</string>
 </resources>

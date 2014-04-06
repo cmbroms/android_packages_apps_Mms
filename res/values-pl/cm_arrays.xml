@@ -20,7 +20,6 @@
         <item>Długa wibracja</item>
         <item>Kilkukrotna krótka</item>
         <item>Kilkukrotna długa</item>
-        <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
     <string-array name="pref_templates_gestures_sensitivity_entries">
         <item>1 (niedokładny)</item>

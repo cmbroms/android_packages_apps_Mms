@@ -34,6 +34,5 @@
         <item>Pitkä</item>
         <item>Useampi lyhyt</item>
         <item>Useampi pitkä</item>
-        <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
 </resources>

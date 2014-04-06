@@ -20,6 +20,5 @@
         <item>長い振動</item>
         <item>複数の短い振動</item>
         <item>複数の長い振動</item>
-        <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
 </resources>

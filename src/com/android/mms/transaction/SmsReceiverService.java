@@ -1,8 +1,8 @@
 /*
- * Copyright (C) 2007-2008 Esmertec AG.
- * Copyright (C) 2007-2008 The Android Open Source Project
  * Copyright (C) 2010-2013, The Linux Foundation. All rights reserved.
  * Not a Contribution.
+ * Copyright (C) 2007-2008 Esmertec AG.
+ * Copyright (C) 2007-2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,13 @@
 package com.android.mms.transaction;
 
 import static android.content.Intent.ACTION_BOOT_COMPLETED;
-import static android.provider.Telephony.Sms.Intents.SMS_RECEIVED_ACTION;
+import static android.provider.Telephony.Sms.Intents.SMS_DELIVER_ACTION;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import android.app.Activity;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -41,6 +38,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SqliteWrapper;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -52,26 +50,26 @@ import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Inbox;
 import android.provider.Telephony.Sms.Intents;
 import android.provider.Telephony.Sms.Outbox;
+import android.telephony.CellBroadcastMessage;
 import android.telephony.MSimSmsManager;
+import android.telephony.MSimTelephonyManager;
 import android.telephony.ServiceState;
+import android.telephony.SmsCbMessage;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
-import android.text.SpannableStringBuilder;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.text.format.DateUtils;
-import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.android.internal.telephony.MSimConstants;
 import com.android.internal.telephony.TelephonyIntents;
-import com.android.internal.telephony.util.BlacklistUtils;
 import com.android.mms.LogTag;
 import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.data.Contact;
 import com.android.mms.data.Conversation;
 import com.android.mms.ui.ClassZeroActivity;
-import com.android.mms.util.AddressUtils;
 import com.android.mms.ui.MessagingPreferenceActivity;
 import com.android.mms.util.Recycler;
 import com.android.mms.util.SendingProgressTokenManager;
@@ -114,6 +112,15 @@ public class SmsReceiverService extends Service {
 
     };
 
+    static final String CB_AREA_INFO_RECEIVED_ACTION =
+            "android.cellbroadcastreceiver.CB_AREA_INFO_RECEIVED";
+
+    /* Cell Broadcast for channel 50 */
+    static final int CB_CHANNEL_50 = 50;
+
+    /* Cell Broadcast for channel 60 */
+    static final int CB_CHANNEL_60 = 60;
+
     public Handler mToastHandler = new Handler();
 
     // This must match SEND_PROJECTION.
@@ -132,27 +139,6 @@ public class SmsReceiverService extends Service {
     public static final String DATA_COUNTDOWN = "DATA_COUNTDOWN";
     public static final String DATA_MESSAGE_URI = "DATA_MESSAGE_URI";
     private static final long TIMER_DURATION = 1000;
-
-    // Blacklist support
-    private static final String REMOVE_BLACKLIST = "com.android.mms.action.REMOVE_BLACKLIST";
-    private static final String EXTRA_NUMBER = "number";
-    private static final String EXTRA_FROM_NOTIFICATION = "fromNotification";
-    private static final int BLACKLISTED_MESSAGE_NOTIFICATION = 119911;
-
-    // Used to track blacklisted messages
-    private static class BlacklistedMessageInfo {
-        String number;
-        long date;
-        int matchType;
-
-        BlacklistedMessageInfo(String number, long date, int matchType) {
-            this.number = number;
-            this.date = date;
-            this.matchType = matchType;
-        }
-    };
-    private ArrayList<BlacklistedMessageInfo> mBlacklistedMessages =
-            new ArrayList<BlacklistedMessageInfo>();
 
     @Override
     public void onCreate() {
@@ -240,7 +226,7 @@ public class SmsReceiverService extends Service {
             if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                 Log.v(TAG, "handleMessage serviceId: " + serviceId + " intent: " + intent);
             }
-            if (intent != null) {
+            if (intent != null && MmsConfig.isSmsEnabled(getApplicationContext())) {
                 String action = intent.getAction();
 
                 int error = intent.getIntExtra("errorCode", 0);
@@ -251,8 +237,10 @@ public class SmsReceiverService extends Service {
 
                 if (MESSAGE_SENT_ACTION.equals(intent.getAction())) {
                     handleSmsSent(intent, error);
-                } else if (SMS_RECEIVED_ACTION.equals(action)) {
+                } else if (SMS_DELIVER_ACTION.equals(action)) {
                     handleSmsReceived(intent, error);
+                } else if (CB_AREA_INFO_RECEIVED_ACTION.equals(action)) {
+                    handleCbSmsReceived(intent, error);
                 } else if (ACTION_BOOT_COMPLETED.equals(action)) {
                     handleBootCompleted();
                 } else if (TelephonyIntents.ACTION_SERVICE_STATE_CHANGED.equals(action)) {
@@ -261,14 +249,6 @@ public class SmsReceiverService extends Service {
                     handleSendMessage();
                 } else if (ACTION_SEND_INACTIVE_MESSAGE.equals(action)) {
                     handleSendInactiveMessage();
-                } else if (REMOVE_BLACKLIST.equals(action)) {
-                    if (intent.getBooleanExtra(EXTRA_FROM_NOTIFICATION, false)) {
-                        // Dismiss the notification that brought us here
-                        cancelBlacklistedMessageNotification();
-                        BlacklistUtils.addOrUpdate(SmsReceiverService.this,
-                                intent.getStringExtra(EXTRA_NUMBER),
-                                0, BlacklistUtils.BLOCK_MESSAGES);
-                    }
                 }
             }
             // NOTE: We MUST not call stopSelf() directly, since we need to
@@ -469,6 +449,7 @@ public class SmsReceiverService extends Service {
                 }
             });
         } else if (mResultCode == SmsManager.RESULT_ERROR_FDN_CHECK_FAILURE) {
+            messageFailedToSend(uri, mResultCode);
             mToastHandler.post(new Runnable() {
                 public void run() {
                     Toast.makeText(SmsReceiverService.this, getString(R.string.fdn_check_failure),
@@ -509,6 +490,34 @@ public class SmsReceiverService extends Service {
             // Called off of the UI thread so ok to block.
             Log.d(TAG, "handleSmsReceived messageUri: " + messageUri + " threadId: " + threadId);
             MessagingNotification.blockingUpdateNewMessageIndicator(this, threadId, false);
+        }
+    }
+
+    private void handleCbSmsReceived(Intent intent, int error) {
+        Bundle extras = intent.getExtras();
+        if (extras == null) {
+            return;
+        }
+        CellBroadcastMessage cbMessage = (CellBroadcastMessage) extras.get("message");
+        if (cbMessage == null) {
+            return;
+        }
+        boolean isMSim = MSimTelephonyManager.getDefault().isMultiSimEnabled();
+        String country = "";
+        if (isMSim) {
+            country = MSimTelephonyManager.getDefault().getSimCountryIso(cbMessage.getSubId());
+        } else {
+            country = TelephonyManager.getDefault().getSimCountryIso();
+        }
+        int serviceCategory = cbMessage.getServiceCategory();
+        if ("in".equals(country) && (serviceCategory == CB_CHANNEL_50 ||
+                serviceCategory == CB_CHANNEL_60)) {
+            Uri cbMessageUri = storeCbMessage(this, cbMessage, error);
+            if (cbMessageUri != null) {
+                long threadId = MessagingNotification.getSmsThreadId(this, cbMessageUri);
+                // Called off of the UI thread so ok to block.
+                MessagingNotification.blockingUpdateNewMessageIndicator(this, threadId, false);
+            }
         }
     }
 
@@ -595,147 +604,9 @@ public class SmsReceiverService extends Service {
             return null;
         } else if (sms.isReplace()) {
             return replaceMessage(context, msgs, error);
-        } else if (AddressUtils.isSuppressedSprintVVM(context, sms.getOriginatingAddress())) {
-            return null;
-        } else if (isBlacklisted(context, sms.getOriginatingAddress(), sms.getTimestampMillis())) {
-            return null;
         } else {
             return storeMessage(context, msgs, error);
         }
-    }
-
-    private boolean isBlacklisted(Context context, String number, long date) {
-        if (DEBUG) {
-            Log.d(TAG, "isBlacklisted(). number: " + number
-                + ", date: " + date + " is being checked against the blacklist");
-        }
-
-        int listType = BlacklistUtils.isListed(context, number, BlacklistUtils.BLOCK_MESSAGES);
-        if (listType != BlacklistUtils.MATCH_NONE) {
-            if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE) || LogTag.DEBUG_SEND) {
-                Log.v(TAG, "Incoming message from " + number + " blocked.");
-            }
-            showBlacklistNotification(context, number, date, listType);
-            return true;
-        }
-        return false;
-    }
-
-    private void showBlacklistNotification(Context context, String number, long date, int matchType) {
-        if (!BlacklistUtils.isBlacklistNotifyEnabled(context)) {
-            return;
-        }
-
-        if (DEBUG) {
-            Log.d(TAG, "notifyBlacklistedCall(). number: " + number
-                + ", match type: " + matchType + ", date: " + date);
-        }
-
-        // Keep track of the message, keeping list sorted from newest to oldest
-        mBlacklistedMessages.add(0, new BlacklistedMessageInfo(number, date, matchType));
-
-        // Get the intent to open Blacklist settings if user taps on content ready
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClassName("com.android.settings", "com.android.settings.Settings$BlacklistSettingsActivity");
-        PendingIntent blSettingsIntent = PendingIntent.getActivity(context, 0, intent, 0);
-
-        // Start building the notification
-        Notification.Builder builder = new Notification.Builder(context);
-        builder.setSmallIcon(R.drawable.ic_block_message_holo_dark)
-                .setContentIntent(blSettingsIntent)
-                .setContentTitle(context.getString(R.string.blacklist_title))
-                .setWhen(date);
-
-        // Add the 'Remove block' notification action only for MATCH_LIST items since
-        // MATCH_REGEX and MATCH_PRIVATE items does not have an associated specific number
-        // to unblock, and MATCH_UNKNOWN unblock for a single number does not make sense.
-        boolean addUnblockAction = true;
-
-        if (mBlacklistedMessages.size() == 1) {
-            String message;
-            switch (matchType) {
-                case BlacklistUtils.MATCH_PRIVATE:
-                    message = context.getString(R.string.blacklist_notification_private_number);
-                    break;
-                case BlacklistUtils.MATCH_UNKNOWN:
-                    message = context.getString(R.string.blacklist_notification_unknown_number, number);
-                    break;
-                default:
-                    message = context.getString(R.string.blacklist_notification, number);
-            }
-            builder.setContentText(message);
-
-            if (matchType != BlacklistUtils.MATCH_LIST) {
-                addUnblockAction = false;
-            }
-        } else {
-            String message = context.getString(R.string.blacklist_notification_multiple,
-                    mBlacklistedMessages.size());
-
-            builder.setContentText(message)
-                    .setNumber(mBlacklistedMessages.size());
-
-            Notification.InboxStyle style = new Notification.InboxStyle(builder);
-
-            for (BlacklistedMessageInfo info : mBlacklistedMessages) {
-                // Takes care of displaying "Private" instead of an empty string
-                String numberString = TextUtils.isEmpty(info.number)
-                        ? context.getString(R.string.blacklist_notification_list_private)
-                        : info.number;
-                style.addLine(formatSingleCallLine(numberString, info.date));
-
-                if (!TextUtils.equals(number, info.number)) {
-                    addUnblockAction = false;
-                } else if (info.matchType != BlacklistUtils.MATCH_LIST) {
-                    addUnblockAction = false;
-                }
-            }
-            style.setBigContentTitle(message);
-            style.setSummaryText(" ");
-            builder.setStyle(style);
-        }
-
-        if (addUnblockAction) {
-            CharSequence action = context.getText(R.string.unblock_number);
-            builder.addAction(R.drawable.ic_unblock_message_holo_dark,
-                    context.getString(R.string.unblock_number),
-                    getUnblockNumberFromNotificationPendingIntent(context, number));
-        }
-
-        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        nm.notify(BLACKLISTED_MESSAGE_NOTIFICATION, builder.getNotification());
-    }
-
-    private void cancelBlacklistedMessageNotification() {
-        mBlacklistedMessages.clear();
-        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        nm.cancel(BLACKLISTED_MESSAGE_NOTIFICATION);
-    }
-
-    private PendingIntent getUnblockNumberFromNotificationPendingIntent(Context context, String number) {
-        Intent intent = new Intent(REMOVE_BLACKLIST);
-        intent.putExtra(EXTRA_NUMBER, number);
-        intent.putExtra(EXTRA_FROM_NOTIFICATION, true);
-        return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    private static final RelativeSizeSpan TIME_SPAN = new RelativeSizeSpan(0.7f);
-
-    private CharSequence formatSingleCallLine(String caller, long date) {
-        int flags = DateUtils.FORMAT_SHOW_TIME;
-        if (!DateUtils.isToday(date)) {
-            flags |= DateUtils.FORMAT_SHOW_WEEKDAY;
-        }
-
-        SpannableStringBuilder lineBuilder = new SpannableStringBuilder();
-        lineBuilder.append(caller);
-        lineBuilder.append("  ");
-
-        int timeIndex = lineBuilder.length();
-        lineBuilder.append(DateUtils.formatDateTime(getApplicationContext(), date, flags));
-        lineBuilder.setSpan(TIME_SPAN, timeIndex, lineBuilder.length(), 0);
-
-        return lineBuilder;
     }
 
     /**
@@ -873,6 +744,36 @@ public class SmsReceiverService extends Service {
 
         ContentResolver resolver = context.getContentResolver();
 
+        Uri insertedUri = SqliteWrapper.insert(context, resolver, Inbox.CONTENT_URI, values);
+
+        // Now make sure we're not over the limit in stored messages
+        Recycler.getSmsRecycler().deleteOldMessagesByThreadId(context, threadId);
+        MmsWidgetProvider.notifyDatasetChanged(context);
+
+        return insertedUri;
+    }
+
+    private Uri storeCbMessage(Context context, CellBroadcastMessage sms, int error) {
+        // Store the broadcast message in the content provider.
+        ContentValues values = new ContentValues();
+        values.put(Sms.ERROR_CODE, error);
+        values.put(Sms.SUB_ID, sms.getSubId());
+
+        // CB messages are concatenated by telephony framework into a single
+        // message in intent, so grab the body directly.
+        values.put(Inbox.BODY, sms.getMessageBody());
+
+        // Make sure we've got a thread id so after the insert we'll be able to
+        // delete excess messages.
+        String address = getString(R.string.cell_broadcast_sender)
+                + Integer.toString(sms.getServiceCategory());
+        values.put(Sms.ADDRESS, address);
+        Long threadId = Conversation.getOrCreateThreadId(context, address);
+        values.put(Sms.THREAD_ID, threadId);
+        values.put(Inbox.READ, 0);
+        values.put(Inbox.SEEN, 0);
+
+        ContentResolver resolver = context.getContentResolver();
         Uri insertedUri = SqliteWrapper.insert(context, resolver, Inbox.CONTENT_URI, values);
 
         // Now make sure we're not over the limit in stored messages

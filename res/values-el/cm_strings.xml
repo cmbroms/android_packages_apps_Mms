@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-     Copyright (C) 2013 The CyanogenMod Project
+     Copyright (C) 2013-2014 The CyanogenMod Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -31,10 +31,6 @@
     <string name="notification_multiple_title_privacy_mode">Νέα μηνύματα</string>
     <string name="notification_multiple_text_privacy_mode"><xliff:g id="number" example="3">%1$s</xliff:g> μη αναγνωσμένα μηνύματα</string>
     <string name="notification_ticker_privacy_mode">Νέο μήνυμα ελήφθη</string>
-    <string name="pref_title_mms_notification_vibrate_pattern">Μοτίβο δόνησης</string>
-    <string name="pref_summary_mms_notification_vibrate_pattern">Αλλαγή μοτίβου δόνησης</string>
-    <string name="pref_text_mms_notification_vibrate_custom">Μορφή off/on σε millisecond: off, on, off, on\u2026</string>
-    <string name="pref_title_mms_notification_vibrate_custom">Προσαρμοσμένο μοτίβο δόνησης</string>
     <string name="pref_quickmessage">Γρήγορη απάντηση</string>
     <string name="pref_dark_theme_title">Χρήση σκοτεινού θέματος</string>
     <string name="pref_dark_theme_summary">Αν δεν επιλεχθέι, το προεπιλεγμένο \'ανοιχτόχρωμο\' θέμα θα χρησιμοποιηθεί</string>
@@ -72,13 +68,6 @@
     <string name="pref_unicode_stripping_leave_intact">Καμία αλλαγή στους χαρακτήρες</string>
     <string name="pref_unicode_stripping_non_encodable">Αφαίρεση χαρακτήρων που δεν μπορούν να κωδικοποιηθούν</string>
     <string name="pref_unicode_stripping_all">Αφαίρεση όλων των χαρακτήρων</string>
-    <string name="pref_title_enable_emojis">Υποστήριξη emoji</string>
-    <string name="pref_summary_enable_emojis">Ενεργοποιήστε την υποστήριξη για τα unicode emoji, ένα σύνολο από 471 ωραία emoticon</string>
-    <string name="menu_insert_emoji">Εισαγωγή emoji</string>
-    <string name="pref_title_enable_quick_emojis">Πλήκτρο γρήγορων emoji</string>
-    <string name="pref_summary_enable_quick_emojis">Εμφάνιση πλήκτρου στην εισαγωγή κειμένου για γρήγορη πρόσβαση στα emoji</string>
-    <string name="pref_title_enable_softbank_encoding">SoftBank emoji</string>
-    <string name="pref_summary_enable_softbank_encoding">Χρήση SoftBank κωδικοποίησης για τα emoji</string>
     <string name="pref_title_mms_full_timestamp">Πλήρες timestamp</string>
     <string name="pref_summary_mms_full_timestamp">Εμφάνιση της ημερομηνίας και της ώρας στα timestamp</string>
     <string name="pref_title_mms_use_sent_timestamp">Αρχικά timestamp</string>
@@ -89,26 +78,13 @@
     <string name="pref_keyboard_unknown">Άγνωστο, παρακαλώ επανεπιλέξτε</string>
     <string name="pref_title_sms_split_counter">Μετρητής χαρακτήρων</string>
     <string name="pref_summary_sms_split_counter">Xαρακτήρες που απομένουν εώς το διαχωρισμό του SMS πχ. (1/160)</string>
-    <string name="menu_insert_contact_info">Εισαγωγή πληροφοριών επαφής</string>
-    <string name="cannot_find_contact">Δεν είναι δυνατή η εισαγωγή των πληροφοριών της επιλεγμένης επαφής</string>
-    <string name="insert_contact_info_positive_button">Εισαγωγή</string>
-    <string name="label_mms_push">Αποστολή MMS</string>
-    <string name="desc_mms_push">Αποστέλλει MMS από τα εξερχόμενα προς το δίκτυο</string>
     <string name="blacklist_title">Μαύρη λίστα</string>
     <string name="blacklist_summary_disabled">Απενεργοποιημένη</string>
     <string name="blacklist_summary">Εισερχόμενα μηνύματα από αριθμούς που είναι στη μαύρη λίστα θα απορρίπτονται</string>
-    <string name="blacklist_notification">Απορρίφθηκε μήνυμα από %s</string>
-    <string name="blacklist_notification_private_number">Απορρίφθηκε μήνυμα από απόρρητο αριθμό</string>
-    <string name="blacklist_notification_list_private">Απόρρητο</string>
-    <string name="blacklist_notification_unknown_number">Απορρίφθηκε μήνυμα από άγνωστο αριθμό %s</string>
-    <string name="blacklist_notification_multiple">Απορρίφθηκαν <xliff:g id="count">%d</xliff:g> μηνύματα</string>
-    <string name="unblock_number">Ακύρωση φραγής</string>
     <string name="add_to_blacklist">Προσθήκη στη μαύρη λίστα</string>
     <string name="add_to_blacklist_message">Μελλοντικά μηνύματα από το %s θα απορρίπτονται</string>
     <string name="alert_dialog_yes">Ναι</string>
     <string name="alert_dialog_no">Όχι</string>
-    <string name="storage_is_full">Η βάση δεδομένων μηνυμάτων είναι πλήρης. Παρακαλώ διαγράψτε ορισμένες συζητήσεις.</string>
-    <string name="menu_resend">Επανάληψη αποστολής</string>
     <string name="select_recipients">Επιλέξτε παραλήπτες</string>
     <string name="groups_header">Ομάδες</string>
     <string name="no_recipients">Δεν βρέθηκαν επαφές</string>
@@ -125,22 +101,11 @@
     <string name="send_delay_20seconds">20 δευτερόλεπτα</string>
     <string name="send_delay_30seconds">30 δευτερόλεπτα</string>
     <string name="sent_countdown">Αντίστροφη μέτρηση παράδοσης μηνύματος</string>
-    <string name="mms1">MMS 1</string>
-    <string name="mms2">MMS 2</string>
-    <string name="mms3">MMS 3</string>
-    <string name="sub1">ΣΥΝΔΡ. 1</string>
-    <string name="sub2">ΣΥΝΔΡ. 2</string>
-    <string name="sub3">ΣΥΝΔΡ. 3</string>
-    <string name="select_subscription_title">Επιλογή συνδρομής</string>
-    <string name="subscription1_title">Συνδρομή 1</string>
-    <string name="subscription2_title">Συνδρομή 2</string>
-    <string name="subscription3_title">Συνδρομή 3</string>
-    <string name="pending_mms_title">Εκκρεμεί MMS σε άλλη συνδρομή.</string>
-    <string name="pending_mms">Μηνύματα: Ένα ή περισσότερα MMS εκκρεμούν.</string>
-    <string name="pending_mms_text">Πιέστε για να αλλάξετε τη συνδρομή.</string>
-    <string name="abort_mms">Μηνύματα: Ματαίωση MMS</string>
-    <string name="abort_mms_text">Πιέστε για να εγκαταλείψετε και να επιστρέψετε.</string>
-    <string name="progress_mms_title">Συναλλαγή MMS σε άλλη συνδρομή σε εξέλιξη</string>
-    <string name="progress_mms">Μηνύματα: MMS σε εξέλιξη\u2026</string>
-    <string name="progress_mms_text">Πιέστε για επανάληψη</string>
+    <string name="pref_title_mms_notification_vibrate_pattern">Μοτίβο δόνησης</string>
+    <string name="pref_summary_mms_notification_vibrate_pattern">Αλλαγή μοτίβου δόνησης</string>
+    <string name="pref_mms_notification_vibrate_normal">Κανονική</string>
+    <string name="pref_mms_notification_vibrate_med_vib">Μεσαία δόνηση</string>
+    <string name="pref_mms_notification_vibrate_long_vib">Εκτενής δόνηση</string>
+    <string name="pref_mms_notification_vibrate_mult_short">Πολλαπλές μικρές</string>
+    <string name="pref_mms_notification_vibrate_mult_long">Πολλαπλές εκτενείς</string>
 </resources>

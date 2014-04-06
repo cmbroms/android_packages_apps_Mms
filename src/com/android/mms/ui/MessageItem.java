@@ -123,7 +123,8 @@ public class MessageItem {
     }
 
     MessageItem(Context context, String type, final Cursor cursor,
-            final ColumnsMap columnsMap, Pattern highlight, boolean fullTimestamp, boolean sentTimestamp) throws MmsException {
+            final ColumnsMap columnsMap, Pattern highlight, boolean fullTimestamp, boolean sentTimestamp)
+                    throws MmsException {
         mContext = context;
         mMsgId = cursor.getLong(columnsMap.mColumnMsgId);
         mHighlight = highlight;

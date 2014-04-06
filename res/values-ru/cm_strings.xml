@@ -19,13 +19,6 @@
     <string name="pref_unicode_stripping_leave_intact">Не заменять символы юникода</string>
     <string name="pref_unicode_stripping_non_encodable">Заменять некодируемые символы</string>
     <string name="pref_unicode_stripping_all">Заменять все символы юникода</string>
-    <string name="pref_title_enable_emojis">Включить эмодзи</string>
-    <string name="pref_summary_enable_emojis">Включить поддержку эмодзи, набора из 471 отличных юникод-смайликов</string>
-    <string name="menu_insert_emoji">Вставить эмодзи</string>
-    <string name="pref_title_enable_quick_emojis">Кнопка эмодзи</string>
-    <string name="pref_summary_enable_quick_emojis">Показывать кнопку вставки эмодзи рядом с полем ввода текста</string>
-    <string name="pref_title_enable_softbank_encoding">SoftBank-эмодзи</string>
-    <string name="pref_summary_enable_softbank_encoding">Использовать кодировку SoftBank для эмодзи</string>
     <string name="pref_title_sms_split_counter">Счётчик фрагментов</string>
     <string name="pref_summary_sms_split_counter">Добавляет к сообщению счётчик вида «1/2»</string>
     <string name="prefs_templates_settings">SMS-шаблоны</string>
@@ -51,10 +44,6 @@
     <string name="gestures_already_present">Подобный жест связан с другим шаблоном</string>
     <string name="select_template">Выберите шаблоны</string>
     <string name="template_select">Выберите шаблон</string>
-    <string name="pref_title_mms_notification_vibrate_pattern">Режим вибрации</string>
-    <string name="pref_summary_mms_notification_vibrate_pattern">Изменение режима вибрации</string>
-    <string name="pref_title_mms_notification_vibrate_custom">Пользоват. режим вибрации</string>
-    <string name="pref_text_mms_notification_vibrate_custom">Формат выкл/вкл в миллисекундах: выкл, вкл, выкл, вкл</string>
     <string name="pref_title_mms_full_timestamp">Полная метка времени</string>
     <string name="pref_summary_mms_full_timestamp">Отображать полную дату и время в сообщениях</string>
     <string name="pref_title_mms_use_sent_timestamp">Исходная метка времени</string>
@@ -88,26 +77,13 @@
     <string name="notification_multiple_title_privacy_mode">Новые сообщения</string>
     <string name="notification_multiple_text_privacy_mode">Сообщений: <xliff:g id="number" example="3">%1$s</xliff:g></string>
     <string name="notification_ticker_privacy_mode">Получено новое сообщение</string>
-    <string name="menu_insert_contact_info">Вставить контакт</string>
-    <string name="cannot_find_contact">Не удаётся вставить информацию из выбранного контакта</string>
-    <string name="insert_contact_info_positive_button">Вставить</string>
-    <string name="label_mms_push">Передача MMS</string>
-    <string name="desc_mms_push">Передавать MMS из исходящих в сеть</string>
     <string name="blacklist_title">Чёрный список</string>
     <string name="blacklist_summary_disabled">Выключен</string>
     <string name="blacklist_summary">Входящие сообщения от абонентов из чёрного списка будут блокироваться</string>
-    <string name="blacklist_notification">Сообщение от %s заблокировано</string>
-    <string name="blacklist_notification_private_number">Сообщение от неизвестного номера заблокировано</string>
-    <string name="blacklist_notification_list_private">Скрытый</string>
-    <string name="blacklist_notification_unknown_number">Заблокирован неизвестный номер %s</string>
-    <string name="blacklist_notification_multiple">Заблокировано сообщений: <xliff:g id="count">%d</xliff:g></string>
-    <string name="unblock_number">Разблокировать</string>
     <string name="add_to_blacklist">Добавить в чёрный список</string>
     <string name="add_to_blacklist_message">Будущие сообщения от %s будут блокироваться</string>
     <string name="alert_dialog_yes">Да</string>
     <string name="alert_dialog_no">Нет</string>
-    <string name="menu_resend">Повторить отправку</string>
-    <string name="storage_is_full">База сообщений переполнена. Пожалуйста, удалите несколько цепочек.</string>
     <string name="select_recipients">Выбор получателей</string>
     <string name="groups_header">Группы</string>
     <string name="no_recipients">Контакты не найдены</string>
@@ -115,7 +91,7 @@
     <string name="menu_done">Готово</string>
     <string name="menu_mobile">Только мобильные</string>
     <string name="menu_groups">Показывать группы</string>
-    <string name="fastscroll_index_groups">Грп</string> <!-- CHAR LIMIT=3 -->
+    <string name="fastscroll_index_groups">Грп</string>
     <string name="pref_title_send_delay">Задержка отправки</string>
     <string name="send_delay_immediate">Без задержки</string>
     <string name="send_delay_3seconds">3 секунды</string>
@@ -124,22 +100,11 @@
     <string name="send_delay_20seconds">20 секунд</string>
     <string name="send_delay_30seconds">30 секунд</string>
     <string name="sent_countdown">Обратный отсчёт</string>
-    <string name="mms1">MMS1</string>
-    <string name="mms2">MMS2</string>
-    <string name="mms3">MMS3</string>
-    <string name="sub1">ПОДП. 1</string>
-    <string name="sub2">ПОДП. 2</string>
-    <string name="sub3">ПОДП. 3</string>
-    <string name="select_subscription_title">Выберите подписку</string>
-    <string name="subscription1_title">Подписка 1</string>
-    <string name="subscription2_title">Подписка 2</string>
-    <string name="subscription3_title">Подписка 3</string>
-    <string name="pending_mms_title">Ожидающие MMS на другой подписке</string>
-    <string name="pending_mms">Сообщения: Имеется одно или более ожидающих MMS</string>
-    <string name="pending_mms_text">Нажмите, чтобы переключить подписку.</string>
-    <string name="abort_mms">Сообщения: Отмена MMS</string>
-    <string name="abort_mms_text">Нажмите, чтобы отменить и вернуться обратно.</string>
-    <string name="progress_mms_title">Идёт обработка MMS из другой подписки</string>
-    <string name="progress_mms">Сообщения: Обработка MMS\u2026</string>
-    <string name="progress_mms_text">Нажмите, чтобы повторить попытку.</string>
+    <string name="pref_title_mms_notification_vibrate_pattern">Режим вибрации</string>
+    <string name="pref_summary_mms_notification_vibrate_pattern">Изменение режима вибрации</string>
+    <string name="pref_mms_notification_vibrate_normal">Нормальный</string>
+    <string name="pref_mms_notification_vibrate_med_vib">Средняя вибрация</string>
+    <string name="pref_mms_notification_vibrate_long_vib">Длинная вибрация</string>
+    <string name="pref_mms_notification_vibrate_mult_short">Несколько коротких</string>
+    <string name="pref_mms_notification_vibrate_mult_long">Несколько длинных</string>
 </resources>

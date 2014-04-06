@@ -140,23 +140,22 @@ public class SmsMessageSender implements MessageSender {
                     }
                 }
         } else { // Send without split or counter
-        for (int i = 0; i < mNumberOfDests; i++) {
-            try {
-                if (LogTag.DEBUG_SEND) {
-                    Log.v(TAG, "queueMessage mDests[i]: " + mDests[i] + " mThreadId: " + mThreadId);
-                }
-                log("updating Database with sub = " + mSubscription);
-                Sms.addMessageToUri(mContext.getContentResolver(),
-                    Uri.parse("content://sms/queued"), mDests[i],
-                    mMessageText, null, mTimestamp,
-                    true /* read */,
-                    requestDeliveryReport,
-                    mThreadId, mSubscription);
+            for (int i = 0; i < mNumberOfDests; i++) {
+                try {
+                    if (LogTag.DEBUG_SEND) {
+                        Log.v(TAG, "queueMessage mDests[i]: " + mDests[i] + " mThreadId: " + mThreadId);
+                    }
+                    log("updating Database with sub = " + mSubscription);
+                    Sms.addMessageToUri(mContext.getContentResolver(),
+                            Uri.parse("content://sms/queued"), mDests[i],
+                            mMessageText, null, mTimestamp,
+                            true /* read */,
+                            requestDeliveryReport,
+                            mThreadId, mSubscription);
                 } catch (SQLiteException e) {
                     if (LogTag.DEBUG_SEND) {
                         Log.e(TAG, "queueMessage SQLiteException", e);
                     }
-                    SqliteWrapper.checkSQLiteException(mContext, e);
                 }
             }
         }

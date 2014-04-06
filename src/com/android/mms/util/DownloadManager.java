@@ -184,13 +184,19 @@ public class DownloadManager {
         return "true".equals(roaming);
     }
 
+    public int getMessageSize(Uri uri) throws MmsException {
+        NotificationInd ind = (NotificationInd) PduPersister
+                .getPduPersister(mContext).load(uri);
+        return (int) ind.getMessageSize();
+    }
+
     public void markState(final Uri uri, int state) {
         // Notify user if the message has expired.
         try {
             NotificationInd nInd = (NotificationInd) PduPersister.getPduPersister(mContext)
                     .load(uri);
-            if ((nInd.getExpiry() < System.currentTimeMillis()/1000L)
-                && (state == STATE_DOWNLOADING)) {
+            if ((nInd.getExpiry() < System.currentTimeMillis() / 1000L)
+                    && (state == STATE_DOWNLOADING || state == STATE_PRE_DOWNLOADING)) {
                 mHandler.post(new Runnable() {
                     public void run() {
                         Toast.makeText(mContext, R.string.service_message_not_found,

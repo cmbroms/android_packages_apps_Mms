@@ -34,6 +34,5 @@
           <item>Lang</item>
           <item>Flere korte</item>
           <item>Flere lange</item>
-          <item>@string/pref_title_mms_notification_vibrate_custom</item>
     </string-array>
 </resources>

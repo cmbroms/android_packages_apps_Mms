@@ -360,6 +360,8 @@ public class ComposeMessageActivity extends Activity
     private SimpleCursorAdapter mTemplatesCursorAdapter;
     private double mGestureSensitivity;
 
+    private boolean mEnableEmoticons;
+
     private int mInputMethod;
 
     private int mLastSmoothScrollPosition;
@@ -2061,6 +2063,7 @@ public class ComposeMessageActivity extends Activity
                 .getDefaultSharedPreferences((Context) ComposeMessageActivity.this);
         mGestureSensitivity = prefs
                 .getInt(MessagingPreferenceActivity.GESTURE_SENSITIVITY_VALUE, 3);
+        mEnableEmoticons = prefs.getBoolean(MessagingPreferenceActivity.ENABLE_EMOTICONS, true);
         boolean showGesture = prefs.getBoolean(MessagingPreferenceActivity.SHOW_GESTURE, false);
         int unicodeStripping = prefs.getInt(MessagingPreferenceActivity.UNICODE_STRIPPING_VALUE,
                 MessagingPreferenceActivity.UNICODE_STRIPPING_LEAVE_INTACT);
@@ -2891,7 +2894,7 @@ public class ComposeMessageActivity extends Activity
 
         if (isRecipientCallable()) {
             MenuItem item = menu.add(0, MENU_CALL_RECIPIENT, 0, R.string.menu_call)
-                .setIcon(R.drawable.ic_menu_call)
+                .setIcon(R.drawable.ic_menu_call_holo_light)
                 .setTitle(R.string.menu_call);
             if (!isRecipientsEditorVisible()) {
                 // If we're not composing a new message, show the call icon in the actionbar
@@ -2906,7 +2909,7 @@ public class ComposeMessageActivity extends Activity
             }
             if (!mWorkingMessage.hasAttachment()) {
                 menu.add(0, MENU_ADD_ATTACHMENT, 0, R.string.add_attachment)
-                        .setIcon(R.drawable.ic_menu_attachment)
+                        .setIcon(R.drawable.ic_menu_attachment_holo_light)
                     .setTitle(R.string.add_attachment)
                         .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);    // add to actionbar
             }
@@ -2920,7 +2923,7 @@ public class ComposeMessageActivity extends Activity
             menu.add(0, MENU_SEND, 0, R.string.send).setIcon(android.R.drawable.ic_menu_send);
         }
 
-        if (!mWorkingMessage.hasSlideshow() && mIsSmsEnabled) {
+        if (!mWorkingMessage.hasSlideshow() && mIsSmsEnabled && mEnableEmoticons) {
             menu.add(0, MENU_INSERT_SMILEY, 0, R.string.menu_insert_smiley).setIcon(
                     R.drawable.ic_menu_emoticons);
         }

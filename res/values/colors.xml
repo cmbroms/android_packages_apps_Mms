@@ -47,7 +47,7 @@
     <color name="banner_item_transparent">#00000000</color>
     <color name="banner_item_activated">#670099cc</color>
     <color name="banner_item_selected">#cc0099cc</color>
-    <color name="banner_item_pressed">#ff33b5e5</color>
+    <color name="banner_item_pressed">#ff3b77e7</color>
 
     <color name="text_shadow_color_light">#33000000</color>
     <color name="solid_white">#ffffffff</color>
@@ -59,7 +59,7 @@
     <color name="action_bar_background">#ff222222</color>
 
     <!-- Color of the background of the action bar when highlighted (ie. pressed, focused) -->
-    <color name="action_bar_background_highlight">#ff33b5e5</color>
+    <color name="action_bar_background_highlight">#ff3b77e7</color>
 
     <!-- New text colors from layouts to make theme chooser apk easier to theme -->
     <color name="compose_message_edit_text">#ffffffff</color>
@@ -71,7 +71,7 @@
     <color name="delivery_report_status">#ffcccccc</color>
     <color name="delivery_report_date">#ffcccccc</color>
     <color name="button_text">#ffffffff</color>
-    <color name="message_received">#ff33b5e5</color>
+    <color name="message_received">#ff3b77e7</color>
     <color name="message_sent">#ffffffff</color>
     <color name="widget_unread_text">#ffdddddd</color>
     <color name="widget_unread_text_light">#ff202020</color>

@@ -45,8 +45,8 @@
     <color name="action_bar_button_text_color">#ffefefef</color>
 
     <color name="banner_item_transparent">#00000000</color>
-    <color name="banner_item_activated">#670099cc</color>
-    <color name="banner_item_selected">#cc0099cc</color>
+    <color name="banner_item_activated">#673b77e7</color>
+    <color name="banner_item_selected">#cc3b77e7</color>
     <color name="banner_item_pressed">#ff3b77e7</color>
 
     <color name="text_shadow_color_light">#33000000</color>

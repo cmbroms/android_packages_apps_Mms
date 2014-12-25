@@ -17,12 +17,12 @@
 
 package com.android.mms.ui;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.app.AlertDialog;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -37,11 +37,11 @@ import android.provider.ContactsContract.Profile;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Mms;
 import android.telephony.PhoneNumberUtils;
-import android.telephony.MSimTelephonyManager;
+import android.telephony.SubscriptionManager;
+import android.telephony.SubInfoRecord;
 import android.telephony.TelephonyManager;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.style.ForegroundColorSpan;
@@ -60,22 +60,19 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.android.mms.LogTag;
 import com.android.mms.MmsApp;
 import com.android.mms.R;
 import com.android.mms.data.Contact;
 import com.android.mms.data.WorkingMessage;
 import com.android.mms.model.SlideModel;
 import com.android.mms.model.SlideshowModel;
-import com.android.mms.transaction.SmsReceiverService;
 import com.android.mms.transaction.Transaction;
 import com.android.mms.transaction.TransactionBundle;
 import com.android.mms.transaction.TransactionService;
 import com.android.mms.util.DownloadManager;
 import com.android.mms.util.ItemLoadedCallback;
-import com.android.mms.util.MultiSimUtility;
-import com.android.mms.util.SmileyParser;
 import com.android.mms.util.ThumbnailManager.ImageLoaded;
 import com.google.android.mms.ContentType;
 import com.google.android.mms.pdu.PduHeaders;
@@ -87,7 +84,7 @@ public class MessageListItem extends LinearLayout implements
         SlideViewInterface, OnClickListener {
     public static final String EXTRA_URLS = "com.android.mms.ExtraUrls";
 
-    private static final String TAG = "MessageListItem";
+    private static final String TAG = LogTag.TAG;
     private static final boolean DEBUG = false;
     private static final boolean DEBUG_DONT_LOAD_IMAGES = false;
 
@@ -212,7 +209,7 @@ public class MessageListItem extends LinearLayout implements
                                 + mContext.getString(R.string.kilobyte);
 
         mBodyTextView.setText(formatMessage(mMessageItem, null,
-                                            mMessageItem.mSubscription,
+                                            mMessageItem.mPhoneId,
                                             mMessageItem.mSubject,
                                             mMessageItem.mHighlight,
                                             mMessageItem.mTextContentType));
@@ -240,6 +237,7 @@ public class MessageListItem extends LinearLayout implements
                 }
             case DownloadManager.STATE_TRANSIENT_FAILURE:
             case DownloadManager.STATE_PERMANENT_FAILURE:
+            case DownloadManager.STATE_SKIP_RETRYING:
             default:
                 setLongClickable(true);
                 inflateDownloadControls();
@@ -254,23 +252,9 @@ public class MessageListItem extends LinearLayout implements
                         intent.putExtra(TransactionBundle.URI, mMessageItem.mMessageUri.toString());
                         intent.putExtra(TransactionBundle.TRANSACTION_TYPE,
                                 Transaction.RETRIEVE_TRANSACTION);
-                        intent.putExtra(Mms.SUB_ID, mMessageItem.mSubscription); //destination subId
-                        intent.putExtra(MultiSimUtility.ORIGIN_SUB_ID,
-                                MultiSimUtility.getCurrentDataSubscription(mContext));
+                        intent.putExtra(Mms.PHONE_ID, mMessageItem.mPhoneId); //destination Phone Id
 
-                        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                            Log.d(TAG, "Download button pressed for sub=" +
-                                       mMessageItem.mSubscription);
-                            Log.d(TAG, "Manual download is always silent transaction");
-
-                            Intent silentIntent = new Intent(mContext,
-                                    com.android.mms.ui.SelectMmsSubscription.class);
-                            silentIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            silentIntent.putExtras(intent); //copy all extras
-                            mContext.startService(silentIntent);
-                        } else {
-                            mContext.startService(intent);
-                        }
+                        mContext.startService(intent);
 
                         DownloadManager.getInstance().markState(
                                  mMessageItem.mMessageUri, DownloadManager.STATE_PRE_DOWNLOADING);
@@ -356,7 +340,7 @@ public class MessageListItem extends LinearLayout implements
         if (formattedMessage == null) {
             formattedMessage = formatMessage(mMessageItem,
                                              mMessageItem.mBody,
-                                             mMessageItem.mSubscription,
+                                             mMessageItem.mPhoneId,
                                              mMessageItem.mSubject,
                                              mMessageItem.mHighlight,
                                              mMessageItem.mTextContentType);
@@ -372,7 +356,7 @@ public class MessageListItem extends LinearLayout implements
             if (mMessageItem.mSlideshow == null) {
                 debugText = "NULL slideshow";
             } else {
-                SlideModel slide = ((SlideshowModel) mMessageItem.mSlideshow).get(0);
+                SlideModel slide = mMessageItem.mSlideshow.get(0);
                 if (slide == null) {
                     debugText = "NULL first slide";
                 } else if (!slide.hasImage()) {
@@ -387,14 +371,9 @@ public class MessageListItem extends LinearLayout implements
         // If we're in the process of sending a message (i.e. pending), then we show a "SENDING..."
         // string in place of the timestamp.
         if (!sameItem || haveLoadedPdu) {
-            boolean isCountingDown = mMessageItem.getCountDown() > 0 &&
-                    MessagingPreferenceActivity.getMessageSendDelayDuration(mContext) > 0;
-            int sendingTextResId = isCountingDown
-                    ? R.string.sent_countdown : R.string.sending_message;
-
             mDateView.setText(buildTimestampLine(mMessageItem.isSending() ?
-                    mContext.getResources().getString(sendingTextResId) :
-                    mMessageItem.mTimestamp));
+                    mContext.getResources().getString(R.string.sending_message) :
+                        mMessageItem.mTimestamp));
         }
         if (mMessageItem.isSms()) {
             showMmsView(false);
@@ -416,7 +395,6 @@ public class MessageListItem extends LinearLayout implements
                 showMmsView(false);
             }
             if (mMessageItem.mSlideshow == null) {
-                final int mCurrentAttachmentType = mMessageItem.mAttachmentType;
                 mMessageItem.setOnPduLoaded(new MessageItem.PduLoadedCallback() {
                     public void onPduLoaded(MessageItem messageItem) {
                         if (DEBUG) {
@@ -428,9 +406,7 @@ public class MessageListItem extends LinearLayout implements
                         if (messageItem != null && mMessageItem != null &&
                                 messageItem.getMessageId() == mMessageItem.getMessageId()) {
                             mMessageItem.setCachedFormattedMessage(null);
-                            boolean isStillSame =
-                                    mCurrentAttachmentType == messageItem.mAttachmentType;
-                            bindCommonMessage(isStillSame);
+                            bindCommonMessage(true);
                         }
                     }
                 });
@@ -561,27 +537,25 @@ public class MessageListItem extends LinearLayout implements
     ForegroundColorSpan mColorSpan = null;  // set in ctor
 
     private CharSequence formatMessage(MessageItem msgItem, String body,
-                                       int subId, String subject, Pattern highlight,
+                                       int phoneId, String subject, Pattern highlight,
                                        String contentType) {
         SpannableStringBuilder buf = new SpannableStringBuilder();
 
-        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()
-                && !isSimCardMessage()) {
-            int subscription = subId + 1;
-            buf.append(MSimTelephonyManager.getDefault().getSimOperatorName(subId)
-                    + "-" + subscription + ":");
+        if (TelephonyManager.getDefault().getPhoneCount() > 1) {
+            //SMS/MMS is operating on PhoneId which is 0, 1..
+            //Sub ID will be 1, 2, ...
+            List<SubInfoRecord> sir = SubscriptionManager.getSubInfoUsingSlotId(phoneId);
+            String displayName =
+                    ((sir != null) && (sir.size() > 0)) ? sir.get(0).displayName : "";
+
+            Log.d(TAG, "PhoneID: " + phoneId + " displayName " + displayName);
+            buf.append(displayName);
             buf.append("\n");
         }
 
         boolean hasSubject = !TextUtils.isEmpty(subject);
-        SmileyParser parser = SmileyParser.getInstance();
         if (hasSubject) {
-            CharSequence smilizedSubject = parser.addSmileySpans(subject);
-            // Can't use the normal getString() with extra arguments for string replacement
-            // because it doesn't preserve the SpannableText returned by addSmileySpans.
-            // We have to manually replace the %s with our text.
-            buf.append(TextUtils.replace(mContext.getResources().getString(R.string.inline_subject),
-                    new String[] { "%s" }, new CharSequence[] { smilizedSubject }));
+            buf.append(mContext.getResources().getString(R.string.inline_subject, subject));
         }
 
         if (!TextUtils.isEmpty(body)) {
@@ -593,7 +567,7 @@ public class MessageListItem extends LinearLayout implements
                 if (hasSubject) {
                     buf.append(" - ");
                 }
-                buf.append(parser.addSmileySpans(body));
+                buf.append(body);
             }
         }
 
@@ -604,10 +578,6 @@ public class MessageListItem extends LinearLayout implements
             }
         }
         return buf;
-    }
-
-    private boolean isSimCardMessage() {
-        return (mContext instanceof ManageSimMessages);
     }
 
     private void drawPlaybackButton(MessageItem msgItem) {
@@ -655,11 +625,6 @@ public class MessageListItem extends LinearLayout implements
     }
 
     public void onMessageListItemClick() {
-        if (mMessageItem != null && mMessageItem.isSending() && mMessageItem.isSms()) {
-            SmsReceiverService.cancelSendingMessage(mMessageItem.mMessageUri);
-            return;
-        }
-
         // If the message is a failed one, clicking it should reload it in the compose view,
         // regardless of whether it has links in it
         if (mMessageItem != null &&
@@ -678,12 +643,7 @@ public class MessageListItem extends LinearLayout implements
         if (spans.length == 0) {
             sendMessage(mMessageItem, MSG_LIST_DETAILS);    // show the message details dialog
         } else if (spans.length == 1) {
-            try {
-                spans[0].onClick(mBodyTextView);
-            } catch (ActivityNotFoundException ex) {
-                Toast.makeText(mContext, R.string.failed_open_associated_activity_msg,
-                        Toast.LENGTH_SHORT).show();
-            }
+            spans[0].onClick(mBodyTextView);
         } else {
             ArrayAdapter<URLSpan> adapter =
                 new ArrayAdapter<URLSpan>(mContext, android.R.layout.select_dialog_item, spans) {
@@ -727,12 +687,7 @@ public class MessageListItem extends LinearLayout implements
                 @Override
                 public final void onClick(DialogInterface dialog, int which) {
                     if (which >= 0) {
-                        try {
-                            spans[which].onClick(mBodyTextView);
-                        } catch (ActivityNotFoundException ex) {
-                            Toast.makeText(mContext, R.string.failed_open_associated_activity_msg,
-                                    Toast.LENGTH_SHORT).show();
-                        }
+                        spans[which].onClick(mBodyTextView);
                     }
                     dialog.dismiss();
                 }
@@ -899,19 +854,5 @@ public class MessageListItem extends LinearLayout implements
     public void seekVideo(int seekTo) {
         // TODO Auto-generated method stub
 
-    }
-
-    public void updateDelayCountDown() {
-        if (mMessageItem.isSms() && mMessageItem.getCountDown() > 0 && mMessageItem.isSending()) {
-            String content = mContext.getResources().getQuantityString(
-                    R.plurals.remaining_delay_time,
-                    mMessageItem.getCountDown(), mMessageItem.getCountDown());
-            Spanned spanned = Html.fromHtml(buildTimestampLine(content));
-            mDateView.setText(spanned);
-        } else {
-            mDateView.setText(buildTimestampLine(mMessageItem.isSending()
-                    ? mContext.getResources().getString(R.string.sending_message)
-                    : mMessageItem.mTimestamp));
-        }
     }
 }

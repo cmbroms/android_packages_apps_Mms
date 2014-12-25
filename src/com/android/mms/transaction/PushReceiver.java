@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
  * Not a Contribution.
  * Copyright (C) 2007-2008 Esmertec AG.
  * Copyright (C) 2007-2008 The Android Open Source Project
@@ -23,9 +23,6 @@ import static android.provider.Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION;
 import static com.google.android.mms.pdu.PduHeaders.MESSAGE_TYPE_DELIVERY_IND;
 import static com.google.android.mms.pdu.PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND;
 import static com.google.android.mms.pdu.PduHeaders.MESSAGE_TYPE_READ_ORIG_IND;
-import android.app.PendingIntent;
-import android.app.NotificationManager;
-import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -37,18 +34,14 @@ import android.database.sqlite.SqliteWrapper;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.PowerManager;
-import android.os.SystemProperties;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Mms.Inbox;
-import android.telephony.MSimTelephonyManager;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 
-import com.android.internal.telephony.MSimConstants;
+import com.android.internal.telephony.PhoneConstants;
+import com.android.mms.LogTag;
 import com.android.mms.MmsConfig;
 import com.android.mms.ui.MessagingPreferenceActivity;
-import com.android.mms.R;
-import com.android.mms.util.MultiSimUtility;
 import com.google.android.mms.ContentType;
 import com.google.android.mms.MmsException;
 import com.google.android.mms.pdu.DeliveryInd;
@@ -59,17 +52,14 @@ import com.google.android.mms.pdu.PduParser;
 import com.google.android.mms.pdu.PduPersister;
 import com.google.android.mms.pdu.ReadOrigInd;
 
-import com.android.internal.telephony.TelephonyProperties;
-
 /**
  * Receives Intent.WAP_PUSH_RECEIVED_ACTION intents and starts the
  * TransactionService by passing the push-data to it.
  */
 public class PushReceiver extends BroadcastReceiver {
-    private static final String TAG = "PushReceiver";
+    private static final String TAG = LogTag.TAG;
     private static final boolean DEBUG = false;
     private static final boolean LOCAL_LOGV = false;
-    private Context mContext;
 
     private class ReceivePushTask extends AsyncTask<Intent,Void,Void> {
         private Context mContext;
@@ -78,8 +68,7 @@ public class PushReceiver extends BroadcastReceiver {
         }
 
 
-    int
-    hexCharToInt(char c) {
+    int hexCharToInt(char c) {
         if (c >= '0' && c <= '9') return (c - '0');
         if (c >= 'A' && c <= 'F') return (c - 'A' + 10);
         if (c >= 'a' && c <= 'f') return (c - 'a' + 10);
@@ -123,7 +112,7 @@ public class PushReceiver extends BroadcastReceiver {
             // Get raw PDU push-data from the message and parse it
             byte[] pushData = intent.getByteArrayExtra("data");
             if (DEBUG) {
-                Log.d(TAG, "PushReceive: pushData="+bytesToHexString(pushData));
+                Log.d(TAG, "PushReceive: pushData= " + bytesToHexString(pushData));
             }
             PduParser parser = new PduParser(pushData);
             GenericPdu pdu = parser.parse();
@@ -175,10 +164,12 @@ public class PushReceiver extends BroadcastReceiver {
                         }
 
                         if (!isDuplicateNotification(mContext, nInd)) {
-                            int subId = intent.getIntExtra(MSimConstants.SUBSCRIPTION_KEY, 0);
+                            int phoneId = intent.getIntExtra(PhoneConstants.SLOT_KEY, 0);
+                            long subId = intent.getLongExtra(PhoneConstants.SUBSCRIPTION_KEY, 0);
+                            //Phone ID will be updated in data base
+                            Log.d(TAG, "phoneId : " + phoneId + " subId : " + subId);
                             ContentValues values = new ContentValues(1);
-                            values.put(Mms.SUB_ID, subId);
-
+                            values.put(Mms.PHONE_ID, phoneId);
                             Uri uri = p.persist(pdu, Inbox.CONTENT_URI,
                                     true,
                                     MessagingPreferenceActivity.getIsGroupMmsEnabled(mContext),
@@ -190,35 +181,8 @@ public class PushReceiver extends BroadcastReceiver {
                             svc.putExtra(TransactionBundle.URI, uri.toString());
                             svc.putExtra(TransactionBundle.TRANSACTION_TYPE,
                                     Transaction.NOTIFICATION_TRANSACTION);
-                            svc.putExtra(Mms.SUB_ID, subId); //destination sub id
-                            svc.putExtra(MultiSimUtility.ORIGIN_SUB_ID,
-                                    MultiSimUtility.getCurrentDataSubscription(mContext));
-
-                            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                                boolean isSilent = true; //default, silent enabled.
-                                if ("prompt".equals(
-                                    SystemProperties.get(
-                                        TelephonyProperties.PROPERTY_MMS_TRANSACTION))) {
-                                    isSilent = false;
-                                }
-
-                                if (isSilent) {
-                                    Log.d(TAG, "MMS silent transaction");
-                                    Intent silentIntent = new Intent(mContext,
-                                            com.android.mms.ui.SelectMmsSubscription.class);
-                                    silentIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                    silentIntent.putExtras(svc); //copy all extras
-                                    mContext.startService(silentIntent);
-
-                                } else {
-                                    Log.d(TAG, "MMS prompt transaction");
-                                    triggerPendingOperation(svc, subId);
-                                }
-                            } else {
-                                mContext.startService(svc);
-                            }
-
-
+                            svc.putExtra(Mms.PHONE_ID, phoneId); //destination phone id
+                            mContext.startService(svc);
                         } else if (LOCAL_LOGV) {
                             Log.v(TAG, "Skip downloading duplicate message: "
                                     + new String(nInd.getContentLocation()));
@@ -242,45 +206,8 @@ public class PushReceiver extends BroadcastReceiver {
         }
     }
 
-    private void triggerPendingOperation(Intent intent, int subId) {
-        Log.d(TAG, "triggerPendingOperation(), SubId="+subId+", Intent="+intent);
-
-            if (MultiSimUtility.getCurrentDataSubscription(mContext) != subId) {
-                Log.d(TAG, "triggerPendingOperation(), Current subscription is different.");
-
-
-                String ns = Context.NOTIFICATION_SERVICE;
-                NotificationManager mNotificationManager = (NotificationManager)
-                        mContext.getSystemService(ns);
-
-                //TODO: use the proper messaging icon
-                int icon = android.R.drawable.stat_notify_chat;
-
-                long when = System.currentTimeMillis();
-
-                Notification notification = new Notification(icon,
-                        mContext.getString(R.string.pending_mms_title), when);
-
-                Intent notificationIntent = new Intent(mContext,
-                        com.android.mms.ui.SelectMmsSubscription.class);
-                notificationIntent.putExtras(intent);
-                PendingIntent contentIntent = PendingIntent.getService(mContext, 0,
-                        notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-                notification.setLatestEventInfo(mContext, mContext.getString(R.string.pending_mms),
-                        mContext.getString(R.string.pending_mms_text), contentIntent);
-
-                mNotificationManager.notify(1, notification);
-            } else {
-                Log.d(TAG, "triggerPendingOperation(), Current subscription is same");
-                // No need to switch subscription, go ahead.
-                mContext.startService(intent);
-            }
-    }
-
     @Override
     public void onReceive(Context context, Intent intent) {
-        mContext = context;
         if (intent.getAction().equals(WAP_PUSH_DELIVER_ACTION)
                 && ContentType.MMS_MESSAGE.equals(intent.getType())) {
             if (LOCAL_LOGV) {

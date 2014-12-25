@@ -21,7 +21,6 @@
 <com.android.mms.ui.MessageListItem
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/msg_list_item_send"
-    android:background="@color/transparent"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal">
@@ -64,7 +63,7 @@
                     android:linksClickable="false"
                     android:gravity="right"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="@color/message_sent"
+                    android:textColor="#ff000000"
                     android:textSize="16sp" />
 
                 <LinearLayout
@@ -87,8 +86,8 @@
                         android:id="@+id/delivered_indicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:src="@drawable/ic_sms_mms_delivered"
                         android:paddingRight="3dip"
+                        android:src="@drawable/ic_sms_mms_delivered"
                         android:visibility="gone" />
 
                     <ImageView

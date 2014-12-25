@@ -35,10 +35,13 @@ import android.os.SystemClock;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Inbox;
 import android.telephony.SmsMessage;
+import android.telephony.SubscriptionManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Window;
 
+import com.android.internal.telephony.PhoneConstants;
+import com.android.mms.LogTag;
 import com.android.mms.R;
 import com.android.mms.transaction.MessagingNotification;
 
@@ -49,9 +52,7 @@ import java.util.ArrayList;
  * it.
  */
 public class ClassZeroActivity extends Activity {
-    private static final String BUFFER = "         ";
-    private static final int BUFFER_OFFSET = BUFFER.length() * 2;
-    private static final String TAG = "display_00";
+    private static final String TAG = LogTag.TAG;
     private static final int ON_AUTO_SAVE = 1;
     private static final String[] REPLACE_PROJECTION = new String[] { Sms._ID,
             Sms.ADDRESS, Sms.PROTOCOL };
@@ -72,6 +73,7 @@ public class ClassZeroActivity extends Activity {
     private long mTimerSet = 0;
     private AlertDialog mDialog = null;
 
+    private int mPhoneId;
     private ArrayList<SmsMessage> mMessageQueue = null;
 
     private Handler mHandler = new Handler() {
@@ -90,6 +92,8 @@ public class ClassZeroActivity extends Activity {
     private boolean queueMsgFromIntent(Intent msgIntent) {
         byte[] pdu = msgIntent.getByteArrayExtra("pdu");
         String format = msgIntent.getStringExtra("format");
+        mPhoneId = msgIntent.getIntExtra(PhoneConstants.PHONE_KEY,
+                SubscriptionManager.INVALID_PHONE_ID);
         SmsMessage rawMessage = SmsMessage.createFromPdu(pdu, format);
         String message = rawMessage.getMessageBody();
         if (TextUtils.isEmpty(message)) {
@@ -239,6 +243,7 @@ public class ClassZeroActivity extends Activity {
         }
         values.put(Inbox.REPLY_PATH_PRESENT, sms.isReplyPathPresent() ? 1 : 0);
         values.put(Inbox.SERVICE_CENTER, sms.getServiceCenterAddress());
+        values.put(Sms.PHONE_ID, mPhoneId);
         return values;
     }
 

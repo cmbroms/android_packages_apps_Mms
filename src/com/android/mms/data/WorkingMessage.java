@@ -39,16 +39,16 @@ import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
 import android.provider.Telephony.MmsSms.PendingMessages;
 import android.provider.Telephony.Sms;
-import android.telephony.MSimSmsManager;
-import android.telephony.MSimTelephonyManager;
 import android.telephony.SmsMessage;
+import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
 import com.android.common.contacts.DataUsageStatUpdater;
 import com.android.common.userhappiness.UserHappinessSignals;
-import com.android.internal.telephony.MSimConstants;
+import com.android.internal.telephony.PhoneConstants;
 import com.android.mms.ContentRestrictionException;
 import com.android.mms.ExceedMessageSizeException;
 import com.android.mms.LogTag;
@@ -83,7 +83,7 @@ import com.google.android.mms.pdu.SendReq;
  * Contains all state related to a message being edited by the user.
  */
 public class WorkingMessage {
-    private static final String TAG = "WorkingMessage";
+    private static final String TAG = LogTag.TAG;
     private static final boolean DEBUG = false;
 
     // Public intents
@@ -161,7 +161,7 @@ public class WorkingMessage {
     };
 
     private static final int MMS_MESSAGE_SIZE_INDEX  = 1;
-    public static int mCurrentConvSub = MSimConstants.SUB1;
+    public static int mCurrentConvPhoneId = PhoneConstants.PHONE_ID1;
 
     /**
      * Callback interface for communicating important state changes back to
@@ -370,8 +370,8 @@ public class WorkingMessage {
         return mText;
     }
 
-    public void setWorkingMessageSub(int subscription) {
-        mCurrentConvSub = subscription;
+    public void setWorkingMessageSub(int phoneId) {
+        mCurrentConvPhoneId = phoneId;
     }
     /**
      * @return True if the message has any text. A message with just whitespace is not considered
@@ -1333,11 +1333,8 @@ public class WorkingMessage {
             Log.d(LogTag.TRANSACTION, "sendSmsWorker sending message: recipients=" +
                     semiSepRecipients + ", threadId=" + threadId);
         }
-        MessageSender sender;
-
-        sender = new SmsMessageSender(mActivity, dests, msgText, threadId,
-                        mCurrentConvSub);
-
+        MessageSender sender = new SmsMessageSender(mActivity, dests, msgText, threadId,
+                mCurrentConvPhoneId);
         try {
             sender.sendMessage(threadId);
 
@@ -1356,17 +1353,6 @@ public class WorkingMessage {
         long threadId = 0;
         Cursor cursor = null;
         boolean newMessage = false;
-        boolean forwardMessage = conv.getHasMmsForward();
-        boolean sameRecipient = false;
-        ContactList contactList = conv.getRecipients();
-        if (contactList != null) {
-            String[] numbers = contactList.getNumbers();
-            if (numbers != null && numbers.length == 1) {
-                if (numbers[0].equals(conv.getForwardRecipientNumber())) {
-                    sameRecipient = true;
-                }
-            }
-        }
         try {
             // Put a placeholder message in the database first
             DraftCache.getInstance().setSavingDraft(true);
@@ -1375,9 +1361,6 @@ public class WorkingMessage {
             // Make sure we are still using the correct thread ID for our
             // recipient set.
             threadId = conv.ensureThreadId();
-            if (forwardMessage && sameRecipient) {
-                MessageUtils.sSameRecipientList.add(threadId);
-            }
 
             if (Log.isLoggable(LogTag.APP, Log.VERBOSE)) {
                 LogTag.debug("sendMmsWorker: update draft MMS message " + mmsUri +
@@ -1483,15 +1466,16 @@ public class WorkingMessage {
         }
 
         ContentValues values = new ContentValues(1);
-        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-            values.put(Mms.SUB_ID, mCurrentConvSub);
+        if ((TelephonyManager.getDefault().getPhoneCount()) > 1) {
+            values.put(Mms.PHONE_ID, mCurrentConvPhoneId);
         } else {
-           values.put(Mms.SUB_ID, MSimTelephonyManager.getDefault().getPreferredDataSubscription());
+            values.put(Mms.PHONE_ID, SubscriptionManager.getPhoneId(
+                    SubscriptionManager.getDefaultDataSubId()));
         }
         SqliteWrapper.update(mActivity, mContentResolver, mmsUri, values, null, null);
 
         MessageSender sender = new MmsMessageSender(mActivity, mmsUri,
-                slideshow.getCurrentMessageSize(), mCurrentConvSub);
+                slideshow.getCurrentMessageSize(), mCurrentConvPhoneId);
         try {
             if (!sender.sendMessage(threadId)) {
                 // The message was sent through SMS protocol, we should
@@ -1503,9 +1487,6 @@ public class WorkingMessage {
             Recycler.getMmsRecycler().deleteOldMessagesByThreadId(mActivity, threadId);
         } catch (Exception e) {
             Log.e(TAG, "Failed to send message: " + mmsUri + ", threadId=" + threadId, e);
-        }
-        if (forwardMessage && sameRecipient) {
-            MessageUtils.sSameRecipientList.remove(threadId);
         }
         MmsWidgetProvider.notifyDatasetChanged(mActivity);
     }
@@ -1617,6 +1598,9 @@ public class WorkingMessage {
             slideshow.sync(pb);
             return res;
         } catch (MmsException e) {
+            return null;
+        } catch (IllegalStateException e) {
+            Log.e(TAG,"failed to create draft mms "+ e);
             return null;
         }
     }

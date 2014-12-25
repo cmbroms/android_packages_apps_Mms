@@ -38,6 +38,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.mms.LogTag;
 import com.android.mms.R;
 import com.android.mms.model.IModelChangedObserver;
 import com.android.mms.model.Model;
@@ -51,7 +52,7 @@ import com.google.android.mms.pdu.PduPersister;
  * A list of slides which allows user to edit each item in it.
  */
 public class SlideshowEditActivity extends ListActivity {
-    private final static String TAG = "SlideshowEditActivity";
+    private final static String TAG = LogTag.TAG;
     private static final boolean DEBUG = false;
     private static final boolean LOCAL_LOGV = false;
 
@@ -130,7 +131,7 @@ public class SlideshowEditActivity extends ListActivity {
         TextView text = (TextView) v.findViewById(R.id.slide_number_text);
         text.setText(R.string.add_slide);
 
-        text = (TextView) v.findViewById(R.id.text_preview_bottom);
+        text = (TextView) v.findViewById(R.id.text_preview);
         text.setText(R.string.add_slide_hint);
         text.setVisibility(View.VISIBLE);
 
@@ -376,7 +377,6 @@ public class SlideshowEditActivity extends ListActivity {
             SlideListItemView slideListItemView;
             slideListItemView = (SlideListItemView) mInflater.inflate(
                     resource, null);
-            slideListItemView.setLayoutModel(mSlideshow.getLayout().getLayoutType());
 
             // Show slide number.
             TextView text;

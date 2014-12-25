@@ -40,11 +40,11 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.SystemProperties;
 import android.provider.MediaStore;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Sms;
 import android.telephony.PhoneNumberUtils;
+import android.telephony.SubscriptionManager;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.text.format.Time;
@@ -58,7 +58,6 @@ import com.android.mms.MmsApp;
 import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.TempFileProvider;
-import com.android.mms.data.Contact;
 import com.android.mms.data.WorkingMessage;
 import com.android.mms.model.MediaModel;
 import com.android.mms.model.SlideModel;
@@ -115,9 +114,6 @@ public class MessageUtils {
     };
 
     private static HashMap numericSugarMap = new HashMap (NUMERIC_CHARS_SUGAR.length);
-
-    // Save the thread id for same recipient forward mms
-    public static ArrayList<Long> sSameRecipientList = new ArrayList<Long>();
 
     static {
         for (int i = 0; i < NUMERIC_CHARS_SUGAR.length; i++) {
@@ -618,6 +614,10 @@ public class MessageUtils {
             mm = slide.getVideo();
         }
 
+        if (mm == null) {
+            return;
+        }
+
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.putExtra("SingleItemOnly", true); // So we don't see "surrounding" images in Gallery
@@ -729,13 +729,12 @@ public class MessageUtils {
     }
 
     public static String getLocalNumber() {
-        sLocalNumber = MmsApp.getApplication().getTelephonyManager().getLine1Number();
-        return sLocalNumber;
+        return getLocalNumber(SubscriptionManager.getDefaultDataSubId());
     }
 
-    public static String getLocalNumber(int subscription) {
-        sLocalNumber = MmsApp.getApplication().getMSimTelephonyManager().
-                getLine1Number(subscription);
+    public static String getLocalNumber(long subId) {
+        sLocalNumber = MmsApp.getApplication().getTelephonyManager()
+            .getLine1NumberForSubscriber(subId);
         return sLocalNumber;
     }
 
@@ -950,7 +949,7 @@ public class MessageUtils {
 
     public static void launchSlideshowActivity(Context context, Uri msgUri, int requestCode) {
         // Launch the slideshow activity to play/view.
-        Intent intent = new Intent(context, MobilePaperShowActivity.class);
+        Intent intent = new Intent(context, SlideshowActivity.class);
         intent.setData(msgUri);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         if (requestCode > 0 && context instanceof Activity) {
@@ -1053,7 +1052,7 @@ public class MessageUtils {
 
         // if we are able to parse the address to a MMS compliant phone number, take that.
         String retVal = parsePhoneNumberForMms(address);
-        if (retVal != null) {
+        if (retVal != null && retVal.length() != 0) {
             return retVal;
         }
 
@@ -1066,273 +1065,7 @@ public class MessageUtils {
         return null;
     }
 
-    private static final String[] MMS_REPORT_REQUEST_PROJECTION = new String[] {
-        Mms.Addr.ADDRESS,       //0
-        Mms.DELIVERY_REPORT,    //1
-        Mms.READ_REPORT         //2
-    };
-
-    private static final String[] MMS_REPORT_STATUS_PROJECTION = new String[] {
-        Mms.Addr.ADDRESS,       //0
-        "delivery_status",      //1
-        "read_status"           //2
-    };
-
-    private static final String[] SMS_REPORT_STATUS_PROJECTION = new String[] {
-        Sms.ADDRESS,            //0
-        Sms.STATUS,             //1
-        Sms.DATE_SENT,          //2
-        Sms.TYPE                //3
-    };
-
-    // These indices must sync up with the projections above.
-    static final int COLUMN_RECIPIENT           = 0;
-    static final int COLUMN_DELIVERY_REPORT     = 1;
-    static final int COLUMN_READ_REPORT         = 2;
-    static final int COLUMN_DELIVERY_STATUS     = 1;
-    static final int COLUMN_READ_STATUS         = 2;
-    static final int COLUMN_DATE_SENT           = 2;
-    static final int COLUMN_MESSAGE_TYPE        = 3;
-
-    public static String getReportDetails(Context context, long messageId, String messageType) {
-        if (messageType.equals("sms")) {
-            return getSmsReportDetails(context, messageId);
-        } else {
-            return getMmsReportDetails(context, messageId);
-        }
-    }
-
-    private static String getSmsReportDetails(Context context, long messageId) {
-        Resources res = context.getResources();
-        Cursor c = SqliteWrapper.query(context, context.getContentResolver(), Sms.CONTENT_URI,
-                SMS_REPORT_STATUS_PROJECTION, "_id = " + messageId, null, null);
-        if (c == null) {
-            return res.getString(R.string.status_label) + res.getString(R.string.status_none);
-        }
-
-        try {
-            if (c.getCount() <= 0) {
-                return res.getString(R.string.status_label) + res.getString(R.string.status_none);
-            }
-
-            StringBuilder details = new StringBuilder();
-            while (c.moveToNext()) {
-                details.append(res.getString(R.string.recipient_label))
-                        .append(Contact.get(c.getString(COLUMN_RECIPIENT), false).getName())
-                        .append('\n');
-                details.append(res.getString(R.string.status_label))
-                        .append(getSmsStatusText(c.getInt(COLUMN_DELIVERY_STATUS), res))
-                        .append('\n');
-
-                long deliveryDate = c.getLong(COLUMN_DATE_SENT);
-                if (c.getInt(COLUMN_MESSAGE_TYPE) == Sms.MESSAGE_TYPE_SENT && deliveryDate > 0) {
-                    details.append(res.getString(R.string.delivered_label))
-                            .append(MessageUtils.formatTimeStampString(context, deliveryDate, true))
-                            .append('\n');
-                }
-                details.append('\n');
-            }
-            return details.toString().trim();
-        } finally {
-            c.close();
-        }
-    }
-
-    private static String getMmsReportStatusText(MmsReportRequest request,
-            Map<String, MmsReportStatus> reportStatus, Resources res) {
-        if (reportStatus == null) {
-            // haven't received any reports.
-            return res.getString(R.string.status_pending);
-        }
-
-        String recipient = request.getRecipient();
-        recipient = Mms.isEmailAddress(recipient)
-                ? Mms.extractAddrSpec(recipient) : PhoneNumberUtils.stripSeparators(recipient);
-        MmsReportStatus status = queryStatusByRecipient(reportStatus, recipient);
-        if (status == null) {
-            // haven't received any reports.
-            return res.getString(R.string.status_pending);
-        }
-
-        if (request.isReadReportRequested()) {
-            if (status.readStatus != 0) {
-                switch (status.readStatus) {
-                    case PduHeaders.READ_STATUS_READ:
-                        return res.getString(R.string.status_read);
-                    case PduHeaders.READ_STATUS__DELETED_WITHOUT_BEING_READ:
-                        return res.getString(R.string.status_unread);
-                }
-            }
-        }
-
-        switch (status.deliveryStatus) {
-            case 0: // No delivery report received so far.
-                return res.getString(R.string.status_pending);
-            case PduHeaders.STATUS_FORWARDED:
-            case PduHeaders.STATUS_RETRIEVED:
-                return res.getString(R.string.status_received);
-            case PduHeaders.STATUS_REJECTED:
-                return res.getString(R.string.status_rejected);
-            default:
-                return res.getString(R.string.status_failed);
-        }
-    }
-
-    private static MmsReportStatus queryStatusByRecipient(
-            Map<String, MmsReportStatus> status, String recipient) {
-        for (String r : status.keySet()) {
-            if (Mms.isEmailAddress(recipient)) {
-                if (TextUtils.equals(r, recipient)) {
-                    return status.get(r);
-                }
-            } else if (PhoneNumberUtils.compare(r, recipient)) {
-                return status.get(r);
-            }
-        }
-        return null;
-    }
-
-    private static String getMmsReportDetails(Context context, long messageId) {
-        Resources res = context.getResources();
-        ArrayList<MmsReportRequest> reportReqs = getMmsReportRequests(context, messageId);
-        if (reportReqs == null || reportReqs.isEmpty()) {
-            return res.getString(R.string.status_label) + res.getString(R.string.status_none);
-        }
-
-        Map<String, MmsReportStatus> reportStatus = getMmsReportStatus(context, messageId);
-        StringBuilder details = new StringBuilder();
-        for (MmsReportRequest reportReq : reportReqs) {
-            details.append(res.getString(R.string.recipient_label))
-                    .append(Contact.get(reportReq.getRecipient(), false).getName())
-                    .append('\n');
-            details.append(res.getString(R.string.status_label))
-                    .append(getMmsReportStatusText(reportReq, reportStatus, res))
-                    .append("\n\n");
-        }
-        return details.toString().trim();
-    }
-
-    private static Map<String, MmsReportStatus> getMmsReportStatus(
-            Context context, long messageId) {
-        Uri uri = Uri.withAppendedPath(Mms.REPORT_STATUS_URI,
-                String.valueOf(messageId));
-        Cursor c = SqliteWrapper.query(context, context.getContentResolver(), uri,
-                MMS_REPORT_STATUS_PROJECTION, null, null, null);
-
-        if (c == null) {
-            return null;
-        }
-
-        try {
-            Map<String, MmsReportStatus> statusMap = new HashMap<String, MmsReportStatus>();
-
-            while (c.moveToNext()) {
-                String recipient = c.getString(COLUMN_RECIPIENT);
-                recipient = Mms.isEmailAddress(recipient)
-                        ? Mms.extractAddrSpec(recipient)
-                        : PhoneNumberUtils.stripSeparators(recipient);
-                MmsReportStatus status = new MmsReportStatus(
-                        c.getInt(COLUMN_DELIVERY_STATUS),
-                        c.getInt(COLUMN_READ_STATUS));
-                statusMap.put(recipient, status);
-            }
-            return statusMap;
-        } finally {
-            c.close();
-        }
-    }
-
-    private static ArrayList<MmsReportRequest> getMmsReportRequests(
-            Context context, long messageId) {
-        Uri uri = Uri.withAppendedPath(Mms.REPORT_REQUEST_URI,
-                String.valueOf(messageId));
-        Cursor c = SqliteWrapper.query(context, context.getContentResolver(), uri,
-                MMS_REPORT_REQUEST_PROJECTION, null, null, null);
-
-        if (c == null) {
-            return null;
-        }
-
-        try {
-            if (c.getCount() <= 0) {
-                return null;
-            }
-
-            ArrayList<MmsReportRequest> reqList = new ArrayList<MmsReportRequest>();
-            while (c.moveToNext()) {
-                reqList.add(new MmsReportRequest(
-                        c.getString(COLUMN_RECIPIENT),
-                        c.getInt(COLUMN_DELIVERY_REPORT),
-                        c.getInt(COLUMN_READ_REPORT)));
-            }
-            return reqList;
-        } finally {
-            c.close();
-        }
-    }
-
-    private static String getSmsStatusText(int status, Resources res) {
-        if (status == Sms.STATUS_NONE) {
-            // No delivery report requested
-            return res.getString(R.string.status_none);
-        } else if (status >= Sms.STATUS_FAILED) {
-            // Failure
-            return res.getString(R.string.status_failed);
-        } else if (status >= Sms.STATUS_PENDING) {
-            // Pending
-            return res.getString(R.string.status_pending);
-        } else {
-            // Success
-            return res.getString(R.string.status_received);
-        }
-    }
-
-    private static final class MmsReportStatus {
-        final int deliveryStatus;
-        final int readStatus;
-
-        public MmsReportStatus(int drStatus, int rrStatus) {
-            deliveryStatus = drStatus;
-            readStatus = rrStatus;
-        }
-    }
-
-    private static final class MmsReportRequest {
-        private final String mRecipient;
-        private final boolean mIsDeliveryReportRequested;
-        private final boolean mIsReadReportRequested;
-
-        public MmsReportRequest(String recipient, int drValue, int rrValue) {
-            mRecipient = recipient;
-            mIsDeliveryReportRequested = drValue == PduHeaders.VALUE_YES;
-            mIsReadReportRequested = rrValue == PduHeaders.VALUE_YES;
-        }
-
-        public String getRecipient() {
-            return mRecipient;
-        }
-
-        public boolean isDeliveryReportRequested() {
-            return mIsDeliveryReportRequested;
-        }
-
-        public boolean isReadReportRequested() {
-            return mIsReadReportRequested;
-        }
-    }
-
     private static void log(String msg) {
         Log.d(TAG, "[MsgUtils] " + msg);
-    }
-
-    public static boolean isCyanogenMod(Context context) {
-        try {
-            String version = SystemProperties.get("ro.cm.version");
-            if (!version.isEmpty()) {
-                return true;
-            }
-        } catch (RuntimeException ignored) {
-        }
-        return false;
     }
 }

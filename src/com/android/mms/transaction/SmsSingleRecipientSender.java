@@ -8,10 +8,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Sms;
-import android.telephony.MSimSmsManager;
-import android.telephony.MSimTelephonyManager;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
+import android.telephony.SubscriptionManager;
 import android.util.Log;
 
 import com.android.mms.LogTag;
@@ -25,11 +24,11 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
     private final boolean mRequestDeliveryReport;
     private String mDest;
     private Uri mUri;
-    private static final String TAG = "SmsSingleRecipientSender";
+    private static final String TAG = LogTag.TAG;
 
     public SmsSingleRecipientSender(Context context, String dest, String msgText, long threadId,
-            boolean requestDeliveryReport, Uri uri, int subscription) {
-        super(context, null, msgText, threadId, subscription);
+            boolean requestDeliveryReport, Uri uri, int phoneId) {
+        super(context, null, msgText, threadId, phoneId);
         mRequestDeliveryReport = requestDeliveryReport;
         mDest = dest;
         mUri = uri;
@@ -44,7 +43,9 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
             // one.
             throw new MmsException("Null message body or have multiple destinations.");
         }
-        SmsManager smsManager = SmsManager.getDefault();
+        long [] subId = SubscriptionManager.getSubId(mPhoneId);
+        Log.e(TAG, "send SMS phone Id = " + mPhoneId + " subId : = " + subId[0]);
+        SmsManager smsManager = SmsManager.getSmsManagerForSubscriber(subId[0]);
         ArrayList<String> messages = null;
         if ((MmsConfig.getEmailGateway() != null) &&
                 (Mms.isEmailAddress(mDest) || MessageUtils.isAlias(mDest))) {
@@ -115,18 +116,12 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
             sentIntents.add(PendingIntent.getBroadcast(mContext, requestCode, intent, 0));
         }
         try {
-            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
-                smsManagerMSim.sendMultipartTextMessage(mDest, mServiceCenter, messages,
-                           sentIntents, deliveryIntents, mSubscription);
-            } else {
-                smsManager.sendMultipartTextMessage(mDest, mServiceCenter, messages, sentIntents,
-                           deliveryIntents);
-            }
+            smsManager.sendMultipartTextMessage(mDest, mServiceCenter, messages,
+                    sentIntents, deliveryIntents);
         } catch (Exception ex) {
             Log.e(TAG, "SmsMessageSender.sendMessage: caught", ex);
             throw new MmsException("SmsMessageSender.sendMessage: caught " + ex +
-                    " from MSimSmsManager.sendTextMessage()");
+                    " from SmsManager.sendMultipartTextMessage()");
         }
         if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE) || LogTag.DEBUG_SEND) {
             log("sendMessage: address=" + mDest + ", threadId=" + mThreadId +

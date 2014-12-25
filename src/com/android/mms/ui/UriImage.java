@@ -47,7 +47,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class UriImage {
-    private static final String TAG = "Mms/image";
+    private static final String TAG = LogTag.TAG;
     private static final boolean DEBUG = false;
     private static final boolean LOCAL_LOGV = false;
     private static final int MMS_PART_ID = 12;
@@ -269,7 +269,7 @@ public class UriImage {
      * @param byteLimit The binary size limit, in bytes
      * @return A resized/recompressed version of this image, in JPEG format
      */
-    public synchronized static byte[] getResizedImageData(int width, int height,
+    public static byte[] getResizedImageData(int width, int height,
             int widthLimit, int heightLimit, int byteLimit, Uri uri, Context context) {
         int outWidth = width;
         int outHeight = height;

@@ -18,11 +18,10 @@
 package com.android.mms.ui;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 
+import com.android.mms.LogTag;
 import com.android.mms.model.AudioModel;
 import com.android.mms.model.ImageModel;
 import com.android.mms.model.LayoutModel;
@@ -42,7 +41,7 @@ import com.android.mms.util.ItemLoadedCallback;
  * A basic presenter of slides.
  */
 public class SlideshowPresenter extends Presenter {
-    private static final String TAG = "SlideshowPresenter";
+    private static final String TAG = LogTag.TAG;
     private static final boolean DEBUG = false;
     private static final boolean LOCAL_LOGV = false;
 
@@ -189,47 +188,20 @@ public class SlideshowPresenter extends Presenter {
      * @param image
      * @param r
      */
-    protected void presentImage(final SlideViewInterface view, final ImageModel image,
+    protected void presentImage(SlideViewInterface view, ImageModel image,
             RegionModel r, boolean dataChanged) {
-        final int transformedWidth = transformWidth(r.getWidth());
-        final int transformedHeight = transformWidth(r.getHeight());
-        final int normalSlideH = (int)((float)transformedHeight * mHeightTransformRatio / 2);
-        final int normalSlideW = (int)((float)transformedWidth * mWidthTransformRatio / 2);
+        int transformedWidth = transformWidth(r.getWidth());
+        int transformedHeight = transformWidth(r.getHeight());
 
         if (LOCAL_LOGV) {
             Log.v(TAG, "presentImage r.getWidth: " + r.getWidth()
                     + ", r.getHeight: " + r.getHeight() +
-                    " normalSlideW: " + normalSlideW +
-                    " normalSlideH: " + normalSlideH+
                     " transformedWidth: " + transformedWidth +
                     " transformedHeight: " + transformedHeight);
         }
 
         if (dataChanged) {
-            final Handler bitmapHandler = new Handler() {
-                @Override
-                public void handleMessage(Message message) {
-                    if (view instanceof SlideListItemView) {
-                            SlideListItemView item = (SlideListItemView) view;
-                            item.setUri(image.getUri());
-                    }
-                    view.setImage(image.getSrc(), (Bitmap)message.obj);
-                }
-            };
-            Thread bitmapLoaderThread = new Thread() {
-                @Override
-                public void run() {
-                    Bitmap drawable;
-                    if (view instanceof SlideListItemView) {
-                        drawable = image.getBitmap(normalSlideW, normalSlideH);
-                    } else {
-                        drawable = image.getBitmap(transformedWidth, transformedHeight);
-                    }
-                    Message message = bitmapHandler.obtainMessage(1, drawable);
-                    bitmapHandler.sendMessage(message);
-                }
-            };
-            bitmapLoaderThread.start();
+            view.setImage(image.getSrc(), image.getBitmap(transformedWidth, transformedHeight));
         }
 
         if (view instanceof AdaptableSlideViewInterface) {

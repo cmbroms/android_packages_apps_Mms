@@ -91,24 +91,21 @@ import java.util.HashSet;
  * This activity provides a list view of existing conversations.
  */
 public class ConversationList extends ListActivity implements DraftCache.OnDraftChangedListener {
-    private static final String TAG = "ConversationList";
+    private static final String TAG = LogTag.TAG;
     private static final boolean DEBUG = false;
     private static final boolean DEBUGCLEANUP = true;
 
-    private static final int THREAD_LIST_QUERY_TOKEN        = 1701;
-    private static final int UNREAD_THREADS_QUERY_TOKEN     = 1702;
-    public static final int DELETE_CONVERSATION_TOKEN       = 1801;
-    public static final int HAVE_LOCKED_MESSAGES_TOKEN      = 1802;
-    private static final int DELETE_OBSOLETE_THREADS_TOKEN  = 1803;
-    private static final int MARK_CONVERSATION_UNREAD_TOKEN = 1804;
+    private static final int THREAD_LIST_QUERY_TOKEN       = 1701;
+    private static final int UNREAD_THREADS_QUERY_TOKEN    = 1702;
+    public static final int DELETE_CONVERSATION_TOKEN      = 1801;
+    public static final int HAVE_LOCKED_MESSAGES_TOKEN     = 1802;
+    private static final int DELETE_OBSOLETE_THREADS_TOKEN = 1803;
 
     // IDs of the context menu items for the list of conversations.
     public static final int MENU_DELETE               = 0;
     public static final int MENU_VIEW                 = 1;
     public static final int MENU_VIEW_CONTACT         = 2;
     public static final int MENU_ADD_TO_CONTACTS      = 3;
-
-    public static boolean mIsRunning;
 
     private ThreadListQueryHandler mQueryHandler;
     private ConversationListAdapter mListAdapter;
@@ -198,20 +195,16 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         mSavedFirstVisiblePosition = listView.getFirstVisiblePosition();
         View firstChild = listView.getChildAt(0);
         mSavedFirstItemOffset = (firstChild == null) ? 0 : firstChild.getTop();
-        mIsRunning = false;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
         boolean isSmsEnabled = MmsConfig.isSmsEnabled(this);
         if (isSmsEnabled != mIsSmsEnabled) {
             mIsSmsEnabled = isSmsEnabled;
             invalidateOptionsMenu();
         }
-
-        mIsRunning = true;
 
         // Multi-select is used to delete conversations. It is disabled if we are not the sms app.
         ListView listView = getListView();
@@ -415,6 +408,8 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     protected void onStop() {
         super.onStop();
 
+        stopAsyncQuery();
+
         DraftCache.getInstance().removeOnDraftChangedListener(this);
 
         unbindListeners(null);
@@ -468,6 +463,13 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             Conversation.startQuery(mQueryHandler, UNREAD_THREADS_QUERY_TOKEN, Threads.READ + "=0");
         } catch (SQLiteException e) {
             SqliteWrapper.checkSQLiteException(this, e);
+        }
+    }
+
+    private void stopAsyncQuery() {
+        if (mQueryHandler != null) {
+            mQueryHandler.cancelOperation(THREAD_LIST_QUERY_TOKEN);
+            mQueryHandler.cancelOperation(UNREAD_THREADS_QUERY_TOKEN);
         }
     }
 
@@ -535,10 +537,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         if (item != null) {
             item.setVisible((mListAdapter.getCount() > 0) && mIsSmsEnabled);
         }
-        item = menu.findItem(R.id.action_mark_all_as_unread);
-        if (item != null) {
-            item.setVisible((mListAdapter.getCount() > 0) && mIsSmsEnabled);
-        }
         item = menu.findItem(R.id.action_compose_new);
         if (item != null ){
             // Dim compose if SMS is disabled because it will not work (will show a toast)
@@ -579,11 +577,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             case R.id.action_delete_all:
                 // The invalid threadId of -1 means all threads here.
                 confirmDeleteThread(-1L, mQueryHandler);
-                break;
-            case R.id.action_mark_all_as_unread:
-                final MarkAsUnreadThreadListener listener = new MarkAsUnreadThreadListener(
-                        null, mQueryHandler, this);
-                confirmMarkAsUnreadDialog(listener, null, this);
                 break;
             case R.id.action_settings:
                 Intent intent = new Intent(this, MessagingPreferenceActivity.class);
@@ -810,37 +803,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             .show();
     }
 
-
- /**
-     * Build and show the proper mark as unread thread dialog. The UI is slightly different
-     * depending on whether we're deleting single/multiple threads or all threads.
-     * @param listener gets called when the delete button is pressed
-     * @param threadIds the thread IDs to be deleted (pass null for all threads)
-     * @param context used to load the various UI elements
-     */
-    private static void confirmMarkAsUnreadDialog(final MarkAsUnreadThreadListener listener,
-            Collection<Long> threadIds,
-            Context context) {
-        View contents = View.inflate(context,R.layout.mark_unread_thread_dialog_view,null);
-        TextView msg = (TextView)contents.findViewById(R.id.message);
-        if (threadIds == null) {
-            msg.setText(R.string.confirm_mark_unread_all_conversations);
-        } else {
-            // Show the number of threads getting marked as unread in the confirmation dialog.
-            int cnt = threadIds.size();
-            msg.setText(context.getResources().getQuantityString(
-                R.plurals.confirm_mark_unread_conversation,cnt,cnt));
-        }
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(R.string.confirm_mark_unread_dialog_title)
-            .setIconAttribute(android.R.attr.alertDialogIcon)
-            .setCancelable(true)
-            .setPositiveButton(R.string.menu_as_unread,listener)
-            .setNegativeButton(R.string.no,null)
-            .setView(contents)
-            .show();
-    }
-
     private final OnKeyListener mThreadListKeyListener = new OnKeyListener() {
         @Override
         public boolean onKey(View v, int keyCode, KeyEvent event) {
@@ -858,38 +820,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             return false;
         }
     };
-
-
-    public static class MarkAsUnreadThreadListener implements OnClickListener {
-        private final Collection<Long> mThreadIds;
-        private final ConversationQueryHandler mHandler;
-        private final Context mContext;
-
-        public MarkAsUnreadThreadListener(Collection<Long> threadIds, ConversationQueryHandler handler,
-                Context context) {
-            mThreadIds = threadIds;
-            mHandler = handler;
-            mContext = context;
-        }
-
-        @Override
-        public void onClick(DialogInterface dialog, final int whichButton) {
-            MessageUtils.handleReadReport(mContext, mThreadIds,
-                    PduHeaders.READ_STATUS__DELETED_WITHOUT_BEING_READ, new Runnable() {
-                @Override
-                public void run() {
-                    if (mThreadIds == null) {
-                        Conversation.startMarkAsUnreadAll(mContext, mHandler);
-                        DraftCache.getInstance().refresh();
-                    } else {
-                        Conversation.startMarkAsUnread(mContext, mHandler, mThreadIds);
-                    }
-                }
-            });
-            dialog.dismiss();
-        }
-    }
-
 
     public static class DeleteThreadListener implements OnClickListener {
         private final Collection<Long> mThreadIds;
@@ -1016,6 +946,13 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 break;
 
             case HAVE_LOCKED_MESSAGES_TOKEN:
+                if (ConversationList.this.isFinishing()) {
+                    Log.w(TAG, "ConversationList is finished, do nothing ");
+                    if (cursor != null) {
+                        cursor.close();
+                    }
+                    return ;
+                }
                 @SuppressWarnings("unchecked")
                 Collection<Long> threadIds = (Collection<Long>)cookie;
                 confirmDeleteThreadDialog(new DeleteThreadListener(threadIds, mQueryHandler,
@@ -1124,16 +1061,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 case R.id.delete:
                     if (mSelectedThreadIds.size() > 0) {
                         confirmDeleteThreads(mSelectedThreadIds, mQueryHandler);
-                    }
-                    mode.finish();
-                    break;
-
-                case R.id.markAsUnread:
-                    if (mSelectedThreadIds.size() > 0) {
-                        final MarkAsUnreadThreadListener listener = new MarkAsUnreadThreadListener(
-                                mSelectedThreadIds, mQueryHandler,ConversationList.this);
-                        confirmMarkAsUnreadDialog(listener, mSelectedThreadIds,
-                                ConversationList.this);
                     }
                     mode.finish();
                     break;

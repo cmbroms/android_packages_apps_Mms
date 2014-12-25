@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2013, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2010-2014, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
@@ -22,10 +22,8 @@ package com.android.mms.ui;
 import java.util.regex.Pattern;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
@@ -42,6 +40,7 @@ import android.widget.AbsListView;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
 
+import com.android.mms.LogTag;
 import com.android.mms.R;
 import com.google.android.mms.MmsException;
 
@@ -49,7 +48,7 @@ import com.google.android.mms.MmsException;
  * The back-end data adapter of a message list.
  */
 public class MessageListAdapter extends CursorAdapter {
-    private static final String TAG = "MessageListAdapter";
+    private static final String TAG = LogTag.TAG;
     private static final boolean LOCAL_LOGV = false;
 
     static final String[] PROJECTION = new String[] {
@@ -60,7 +59,7 @@ public class MessageListAdapter extends CursorAdapter {
         // For SMS
         Sms.ADDRESS,
         Sms.BODY,
-        Sms.SUB_ID,
+        Sms.PHONE_ID,
         Sms.DATE,
         Sms.DATE_SENT,
         Sms.READ,
@@ -91,7 +90,7 @@ public class MessageListAdapter extends CursorAdapter {
     static final int COLUMN_THREAD_ID           = 2;
     static final int COLUMN_SMS_ADDRESS         = 3;
     static final int COLUMN_SMS_BODY            = 4;
-    static final int COLUMN_SUB_ID              = 5;
+    static final int COLUMN_PHONE_ID            = 5;
     static final int COLUMN_SMS_DATE            = 6;
     static final int COLUMN_SMS_DATE_SENT       = 7;
     static final int COLUMN_SMS_READ            = 8;
@@ -128,8 +127,6 @@ public class MessageListAdapter extends CursorAdapter {
     private Pattern mHighlight;
     private Context mContext;
     private boolean mIsGroupConversation;
-    private boolean mFullTimestamp;
-    private boolean mSentTimestamp;
 
     public MessageListAdapter(
             Context context, Cursor c, ListView listView,
@@ -147,10 +144,6 @@ public class MessageListAdapter extends CursorAdapter {
         } else {
             mColumnsMap = new ColumnsMap(c);
         }
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        mFullTimestamp = prefs.getBoolean(MessagingPreferenceActivity.FULL_TIMESTAMP, false);
-        mSentTimestamp = prefs.getBoolean(MessagingPreferenceActivity.SENT_TIMESTAMP, false);
 
         listView.setRecyclerListener(new AbsListView.RecyclerListener() {
             @Override
@@ -244,7 +237,7 @@ public class MessageListAdapter extends CursorAdapter {
         MessageItem item = mMessageItemCache.get(getKey(type, msgId));
         if (item == null && c != null && isCursorValid(c)) {
             try {
-                item = new MessageItem(mContext, type, c, mColumnsMap, mHighlight, mFullTimestamp, mSentTimestamp);
+                item = new MessageItem(mContext, type, c, mColumnsMap, mHighlight);
                 mMessageItemCache.put(getKey(item.mType, item.mMsgId), item);
             } catch (MmsException e) {
                 Log.e(TAG, "getCachedMessageItem: ", e);
@@ -318,7 +311,7 @@ public class MessageListAdapter extends CursorAdapter {
                 do {
                     long id = cursor.getLong(mRowIDColumn);
                     String type = cursor.getString(mColumnsMap.mColumnMsgType);
-                    if ((id == item.mMsgId) && type.equals(item.mType)) {
+                    if (id == item.mMsgId && (type != null && type.equals(item.mType))) {
                         return cursor;
                     }
                 } while (cursor.moveToNext());
@@ -332,7 +325,7 @@ public class MessageListAdapter extends CursorAdapter {
         public int mColumnMsgId;
         public int mColumnSmsAddress;
         public int mColumnSmsBody;
-        public int mColumnSubId;
+        public int mColumnPhoneId;
         public int mColumnSmsDate;
         public int mColumnSmsDateSent;
         public int mColumnSmsRead;
@@ -359,7 +352,7 @@ public class MessageListAdapter extends CursorAdapter {
             mColumnMsgId              = COLUMN_ID;
             mColumnSmsAddress         = COLUMN_SMS_ADDRESS;
             mColumnSmsBody            = COLUMN_SMS_BODY;
-            mColumnSubId              = COLUMN_SUB_ID;
+            mColumnPhoneId            = COLUMN_PHONE_ID;
             mColumnSmsDate            = COLUMN_SMS_DATE;
             mColumnSmsDateSent        = COLUMN_SMS_DATE_SENT;
             mColumnSmsType            = COLUMN_SMS_TYPE;
@@ -407,7 +400,7 @@ public class MessageListAdapter extends CursorAdapter {
             }
 
             try {
-                mColumnSubId = cursor.getColumnIndexOrThrow(Sms.SUB_ID);
+                mColumnPhoneId = cursor.getColumnIndexOrThrow(Sms.PHONE_ID);
             } catch (IllegalArgumentException e) {
                 Log.w("colsMap", e.getMessage());
             }

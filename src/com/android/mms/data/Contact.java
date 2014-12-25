@@ -45,7 +45,7 @@ public class Contact {
     public static final String TEL_SCHEME = "tel";
     public static final String CONTENT_SCHEME = "content";
     private static final int CONTACT_METHOD_ID_UNKNOWN = -1;
-    private static final String TAG = "Contact";
+    private static final String TAG = LogTag.TAG;
     private static ContactsCache sContactCache;
     private static final String SELF_ITEM_KEY = "Self_Item_Key";
 
@@ -92,6 +92,7 @@ public class Contact {
     private boolean mQueryPending;
     private boolean mIsMe;          // true if this contact is me!
     private boolean mSendToVoicemail;   // true if this contact should not put up notification
+    private Uri mPeopleReferenceUri;
 
     public interface UpdateListener {
         public void onUpdate(Contact updated);
@@ -329,12 +330,16 @@ public class Contact {
         return mContactMethodType;
     }
 
+    public Uri getPeopleReferenceUri() {
+        return mPeopleReferenceUri;
+    }
+
     public long getContactMethodId() {
         return mContactMethodId;
     }
 
-    public synchronized Uri getPhoneUri(boolean forceTelUri) {
-        if (existsInDatabase() && !forceTelUri) {
+    public synchronized Uri getPhoneUri() {
+        if (existsInDatabase()) {
             return ContentUris.withAppendedId(Phone.CONTENT_URI, mContactMethodId);
         } else {
             Uri.Builder ub = new Uri.Builder();
@@ -745,6 +750,7 @@ public class Contact {
                     c.mNumberE164 = entry.mNumberE164;
                     c.mName = entry.mName;
                     c.mSendToVoicemail = entry.mSendToVoicemail;
+                    c.mPeopleReferenceUri = entry.mPeopleReferenceUri;
 
                     c.notSynchronizedUpdateNameAndNumber();
 
@@ -842,6 +848,7 @@ public class Contact {
         private Contact getContactInfoForPhoneNumber(String number) {
             Contact entry = new Contact(number);
             entry.mContactMethodType = CONTACT_METHOD_TYPE_PHONE;
+            entry.mPeopleReferenceUri = Uri.fromParts("tel", number, null);
 
             if (Log.isLoggable(LogTag.CONTACT, Log.DEBUG)) {
                 log("queryContactInfoByNumber: number=" + number);
@@ -1014,6 +1021,7 @@ public class Contact {
         private Contact getContactInfoForEmailAddress(String email) {
             Contact entry = new Contact(email);
             entry.mContactMethodType = CONTACT_METHOD_TYPE_EMAIL;
+            entry.mPeopleReferenceUri = Uri.fromParts("mailto", email, null);
 
             Cursor cursor = SqliteWrapper.query(mContext, mContext.getContentResolver(),
                     EMAIL_WITH_PRESENCE_URI,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2013, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2010-2014, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  * Copyright (C) 2007-2008 Esmertec AG.
  * Copyright (C) 2007-2008 The Android Open Source Project
@@ -22,7 +22,6 @@ package com.android.mms.transaction;
 import static android.content.Intent.ACTION_BOOT_COMPLETED;
 import static android.provider.Telephony.Sms.Intents.SMS_DELIVER_ACTION;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
@@ -34,35 +33,29 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SqliteWrapper;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
-import android.preference.PreferenceManager;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Inbox;
 import android.provider.Telephony.Sms.Intents;
 import android.provider.Telephony.Sms.Outbox;
-import android.telephony.CellBroadcastMessage;
-import android.telephony.MSimSmsManager;
-import android.telephony.MSimTelephonyManager;
 import android.telephony.ServiceState;
-import android.telephony.SmsCbMessage;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.android.internal.telephony.MSimConstants;
+import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.mms.LogTag;
 import com.android.mms.MmsConfig;
@@ -70,7 +63,6 @@ import com.android.mms.R;
 import com.android.mms.data.Contact;
 import com.android.mms.data.Conversation;
 import com.android.mms.ui.ClassZeroActivity;
-import com.android.mms.ui.MessagingPreferenceActivity;
 import com.android.mms.util.Recycler;
 import com.android.mms.util.SendingProgressTokenManager;
 import com.android.mms.widget.MmsWidgetProvider;
@@ -82,9 +74,7 @@ import com.google.android.mms.MmsException;
  * main thread that SmsReceiver runs on.
  */
 public class SmsReceiverService extends Service {
-    private static final String TAG = "SmsReceiverService";
-    private boolean DEBUG = false;
-    private final String SUBSCRIPTION_KEY = "subscription";
+    private static final String TAG = LogTag.TAG;
 
     private ServiceHandler mServiceHandler;
     private Looper mServiceLooper;
@@ -108,18 +98,9 @@ public class SmsReceiverService extends Service {
         Sms.ADDRESS,    //2
         Sms.BODY,       //3
         Sms.STATUS,     //4
-        Sms.SUB_ID,     //5
+        Sms.PHONE_ID,   //5
 
     };
-
-    static final String CB_AREA_INFO_RECEIVED_ACTION =
-            "android.cellbroadcastreceiver.CB_AREA_INFO_RECEIVED";
-
-    /* Cell Broadcast for channel 50 */
-    static final int CB_CHANNEL_50 = 50;
-
-    /* Cell Broadcast for channel 60 */
-    static final int CB_CHANNEL_60 = 60;
 
     public Handler mToastHandler = new Handler();
 
@@ -129,16 +110,8 @@ public class SmsReceiverService extends Service {
     private static final int SEND_COLUMN_ADDRESS    = 2;
     private static final int SEND_COLUMN_BODY       = 3;
     private static final int SEND_COLUMN_STATUS     = 4;
-    private static final int SEND_COLUMN_SUB_ID     = 5;
+    private static final int SEND_COLUMN_PHONE_ID   = 5;
 
-    private int mResultCode;
-
-    // SMS sending delay
-    private static Uri sCurrentSendingUri = Uri.EMPTY;
-    public static final String ACTION_SEND_COUNTDOWN ="com.android.mms.transaction.SEND_COUNTDOWN";
-    public static final String DATA_COUNTDOWN = "DATA_COUNTDOWN";
-    public static final String DATA_MESSAGE_URI = "DATA_MESSAGE_URI";
-    private static final long TIMER_DURATION = 1000;
 
     @Override
     public void onCreate() {
@@ -161,11 +134,11 @@ public class SmsReceiverService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Temporarily removed for this duplicate message track down.
 
-        mResultCode = intent != null ? intent.getIntExtra("result", 0) : 0;
+        int resultCode = intent != null ? intent.getIntExtra("result", 0) : 0;
 
-        if (mResultCode != 0) {
-            Log.v(TAG, "onStart: #" + startId + " mResultCode: " + mResultCode +
-                    " = " + translateResultCode(mResultCode));
+        if (resultCode != 0) {
+            Log.v(TAG, "onStart: #" + startId + " resultCode: " + resultCode +
+                    " = " + translateResultCode(resultCode));
         }
 
         Message msg = mServiceHandler.obtainMessage();
@@ -239,8 +212,6 @@ public class SmsReceiverService extends Service {
                     handleSmsSent(intent, error);
                 } else if (SMS_DELIVER_ACTION.equals(action)) {
                     handleSmsReceived(intent, error);
-                } else if (CB_AREA_INFO_RECEIVED_ACTION.equals(action)) {
-                    handleCbSmsReceived(intent, error);
                 } else if (ACTION_BOOT_COMPLETED.equals(action)) {
                     handleBootCompleted();
                 } else if (TelephonyIntents.ACTION_SERVICE_STATE_CHANGED.equals(action)) {
@@ -257,24 +228,16 @@ public class SmsReceiverService extends Service {
         }
     }
 
-    public static void cancelSendingMessage(Uri messageUri) {
-        synchronized (sCurrentSendingUri) {
-            if (sCurrentSendingUri.equals(messageUri)) {
-                sCurrentSendingUri.notifyAll();
-            }
-        }
-    }
-
     private void handleServiceStateChanged(Intent intent) {
         // If service just returned, start sending out the queued messages
         ServiceState serviceState = ServiceState.newFromBundle(intent.getExtras());
-        int subscription = intent.getIntExtra(SUBSCRIPTION_KEY, 0);
-        int prefSubscription = MSimSmsManager.getDefault().getPreferredSmsSubscription();
+        long subId = intent.getLongExtra(PhoneConstants.SUBSCRIPTION_KEY, 0);
+        long prefSubId = SubscriptionManager.getDefaultSmsSubId();
         // if service state is IN_SERVICE & current subscription is same as
-        // preferred SMS subscription.i.e.as set under MultiSIM Settings,then
+        // preferred SMS subscription.i.e.as set under SIM Settings, then
         // sendFirstQueuedMessage.
         if (serviceState.getState() == ServiceState.STATE_IN_SERVICE &&
-            subscription == prefSubscription) {
+            subId == prefSubId) {
             sendFirstQueuedMessage();
         }
     }
@@ -283,57 +246,6 @@ public class SmsReceiverService extends Service {
         if (!mSending) {
             sendFirstQueuedMessage();
         }
-    }
-
-    private boolean maybeDelaySendingAndCheckForCancel(Uri msgUri) {
-        long sendDelay = MessagingPreferenceActivity.getMessageSendDelayDuration(
-                getApplicationContext());
-        if (sendDelay <= 0) {
-            return false;
-        }
-
-        boolean oldSending = mSending;
-        boolean sendingCancelled = false;
-
-        try {
-            sCurrentSendingUri = msgUri;
-            mSending = true;
-
-            int countDown = (int) sendDelay / 1000;
-            while (countDown >= 0 && !sendingCancelled) {
-                Intent intent = new Intent(SmsReceiverService.ACTION_SEND_COUNTDOWN);
-                intent.putExtra(DATA_COUNTDOWN, countDown);
-                intent.putExtra(DATA_MESSAGE_URI, msgUri);
-                sendBroadcast(intent);
-
-                if (countDown > 0) {
-                    long start = System.currentTimeMillis();
-                    synchronized (sCurrentSendingUri) {
-                        sCurrentSendingUri.wait(SmsReceiverService.TIMER_DURATION);
-                    }
-                    long end = System.currentTimeMillis();
-                    if (end - start < SmsReceiverService.TIMER_DURATION) {
-                        sendingCancelled = true;
-                    }
-                    Log.d(TAG, "Delayed send: wait returned after " + (end - start) + " ms");
-                }
-                countDown--;
-            }
-        } catch (InterruptedException e) {
-            Log.d(TAG, "sendFirstQueuedMessage: user cancelled sending " + msgUri);
-            sendingCancelled = true;
-        } finally {
-            sCurrentSendingUri = Uri.EMPTY;
-        }
-
-        mSending = oldSending && !sendingCancelled;
-        if (sendingCancelled) {
-            messageFailedToSend(msgUri, SmsManager.RESULT_ERROR_GENERIC_FAILURE);
-            unRegisterForServiceStateChanges();
-            return true;
-        }
-
-        return false;
     }
 
     private void handleSendInactiveMessage() {
@@ -360,16 +272,12 @@ public class SmsReceiverService extends Service {
                     int status = c.getInt(SEND_COLUMN_STATUS);
 
                     int msgId = c.getInt(SEND_COLUMN_ID);
-                    int subId = c.getInt(SEND_COLUMN_SUB_ID);
+                    int phoneId = c.getInt(SEND_COLUMN_PHONE_ID);
                     Uri msgUri = ContentUris.withAppendedId(Sms.CONTENT_URI, msgId);
-
-                    if (maybeDelaySendingAndCheckForCancel(msgUri)) {
-                        return;
-                    }
 
                     SmsMessageSender sender = new SmsSingleRecipientSender(this,
                             address, msgText, threadId, status == Sms.STATUS_PENDING,
-                            msgUri, subId);
+                            msgUri, phoneId);
 
                     if (LogTag.DEBUG_SEND ||
                             LogTag.VERBOSE ||
@@ -409,30 +317,31 @@ public class SmsReceiverService extends Service {
 
     private void handleSmsSent(Intent intent, int error) {
         Uri uri = intent.getData();
+        int resultCode = intent.getIntExtra("result", 0);
         mSending = false;
         boolean sendNextMsg = intent.getBooleanExtra(EXTRA_MESSAGE_SENT_SEND_NEXT, false);
 
         if (LogTag.DEBUG_SEND) {
             Log.v(TAG, "handleSmsSent uri: " + uri + " sendNextMsg: " + sendNextMsg +
-                    " mResultCode: " + mResultCode +
-                    " = " + translateResultCode(mResultCode) + " error: " + error);
+                    " resultCode: " + resultCode +
+                    " = " + translateResultCode(resultCode) + " error: " + error);
         }
 
-        if (mResultCode == Activity.RESULT_OK) {
-            if (LogTag.DEBUG_SEND || Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                Log.v(TAG, "handleSmsSent move message to sent folder uri: " + uri);
-            }
-            if (!Sms.moveMessageToFolder(this, uri, Sms.MESSAGE_TYPE_SENT, error)) {
-                Log.e(TAG, "handleSmsSent: failed to move message " + uri + " to sent folder");
-            }
+        if (resultCode == Activity.RESULT_OK) {
             if (sendNextMsg) {
+                if (LogTag.DEBUG_SEND || Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
+                    Log.v(TAG, "handleSmsSent: move message to sent folder uri: " + uri);
+                }
+                if (!Sms.moveMessageToFolder(this, uri, Sms.MESSAGE_TYPE_SENT, error)) {
+                    Log.e(TAG, "handleSmsSent: failed to move message " + uri + " to sent folder");
+                }
                 sendFirstQueuedMessage();
             }
 
             // Update the notification for failed messages since they may be deleted.
             MessagingNotification.nonBlockingUpdateSendFailedNotification(this);
-        } else if ((mResultCode == SmsManager.RESULT_ERROR_RADIO_OFF) ||
-                (mResultCode == SmsManager.RESULT_ERROR_NO_SERVICE)) {
+        } else if ((resultCode == SmsManager.RESULT_ERROR_RADIO_OFF) ||
+                (resultCode == SmsManager.RESULT_ERROR_NO_SERVICE)) {
             if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                 Log.v(TAG, "handleSmsSent: no service, queuing message w/ uri: " + uri);
             }
@@ -448,8 +357,8 @@ public class SmsReceiverService extends Service {
                             Toast.LENGTH_SHORT).show();
                 }
             });
-        } else if (mResultCode == SmsManager.RESULT_ERROR_FDN_CHECK_FAILURE) {
-            messageFailedToSend(uri, mResultCode);
+        } else if (resultCode == SmsManager.RESULT_ERROR_FDN_CHECK_FAILURE) {
+            messageFailedToSend(uri, resultCode);
             mToastHandler.post(new Runnable() {
                 public void run() {
                     Toast.makeText(SmsReceiverService.this, getString(R.string.fdn_check_failure),
@@ -490,34 +399,6 @@ public class SmsReceiverService extends Service {
             // Called off of the UI thread so ok to block.
             Log.d(TAG, "handleSmsReceived messageUri: " + messageUri + " threadId: " + threadId);
             MessagingNotification.blockingUpdateNewMessageIndicator(this, threadId, false);
-        }
-    }
-
-    private void handleCbSmsReceived(Intent intent, int error) {
-        Bundle extras = intent.getExtras();
-        if (extras == null) {
-            return;
-        }
-        CellBroadcastMessage cbMessage = (CellBroadcastMessage) extras.get("message");
-        if (cbMessage == null) {
-            return;
-        }
-        boolean isMSim = MSimTelephonyManager.getDefault().isMultiSimEnabled();
-        String country = "";
-        if (isMSim) {
-            country = MSimTelephonyManager.getDefault().getSimCountryIso(cbMessage.getSubId());
-        } else {
-            country = TelephonyManager.getDefault().getSimCountryIso();
-        }
-        int serviceCategory = cbMessage.getServiceCategory();
-        if ("in".equals(country) && (serviceCategory == CB_CHANNEL_50 ||
-                serviceCategory == CB_CHANNEL_60)) {
-            Uri cbMessageUri = storeCbMessage(this, cbMessage, error);
-            if (cbMessageUri != null) {
-                long threadId = MessagingNotification.getSmsThreadId(this, cbMessageUri);
-                // Called off of the UI thread so ok to block.
-                MessagingNotification.blockingUpdateNewMessageIndicator(this, threadId, false);
-            }
         }
     }
 
@@ -650,10 +531,10 @@ public class SmsReceiverService extends Service {
         }
         selection = Sms.ADDRESS + " = ? AND " +
                     Sms.PROTOCOL + " = ? AND " +
-                    Sms.SUB_ID +  " = ? ";
+                    Sms.PHONE_ID +  " = ? ";
         selectionArgs = new String[] {
                 originatingAddress, Integer.toString(protocolIdentifier),
-                Integer.toString(sms.getSubId())
+                Integer.toString(SubscriptionManager.getPhoneId(sms.getSubId()))
             };
 
         Cursor cursor = SqliteWrapper.query(context, resolver, Inbox.CONTENT_URI,
@@ -690,7 +571,7 @@ public class SmsReceiverService extends Service {
         // Store the message in the content provider.
         ContentValues values = extractContentValues(sms);
         values.put(Sms.ERROR_CODE, error);
-        values.put(Sms.SUB_ID, sms.getSubId());
+        values.put(Sms.PHONE_ID, SubscriptionManager.getPhoneId(sms.getSubId()));
 
         int pduCount = msgs.length;
 
@@ -753,36 +634,6 @@ public class SmsReceiverService extends Service {
         return insertedUri;
     }
 
-    private Uri storeCbMessage(Context context, CellBroadcastMessage sms, int error) {
-        // Store the broadcast message in the content provider.
-        ContentValues values = new ContentValues();
-        values.put(Sms.ERROR_CODE, error);
-        values.put(Sms.SUB_ID, sms.getSubId());
-
-        // CB messages are concatenated by telephony framework into a single
-        // message in intent, so grab the body directly.
-        values.put(Inbox.BODY, sms.getMessageBody());
-
-        // Make sure we've got a thread id so after the insert we'll be able to
-        // delete excess messages.
-        String address = getString(R.string.cell_broadcast_sender)
-                + Integer.toString(sms.getServiceCategory());
-        values.put(Sms.ADDRESS, address);
-        Long threadId = Conversation.getOrCreateThreadId(context, address);
-        values.put(Sms.THREAD_ID, threadId);
-        values.put(Inbox.READ, 0);
-        values.put(Inbox.SEEN, 0);
-
-        ContentResolver resolver = context.getContentResolver();
-        Uri insertedUri = SqliteWrapper.insert(context, resolver, Inbox.CONTENT_URI, values);
-
-        // Now make sure we're not over the limit in stored messages
-        Recycler.getSmsRecycler().deleteOldMessagesByThreadId(context, threadId);
-        MmsWidgetProvider.notifyDatasetChanged(context);
-
-        return insertedUri;
-    }
-
     /**
      * Extract all the content values except the body from an SMS
      * message.
@@ -828,11 +679,15 @@ public class SmsReceiverService extends Service {
      *
      */
     private void displayClassZeroMessage(Context context, SmsMessage sms, String format) {
+        long subId = sms.getSubId();
+        int phoneId = SubscriptionManager.getPhoneId(subId);
+
         // Using NEW_TASK here is necessary because we're calling
         // startActivity from outside an activity.
         Intent smsDialogIntent = new Intent(context, ClassZeroActivity.class)
                 .putExtra("pdu", sms.getPdu())
                 .putExtra("format", format)
+                .putExtra(PhoneConstants.PHONE_KEY, phoneId)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                           | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
 
